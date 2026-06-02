@@ -1,19 +1,21 @@
 {
   "name": "MP3King",
   "short_name": "MP3King",
-  "description": "Your music kingdom. Stream, discover, and rule your playlist.",
+  "description": "Your ultimate music streaming companion",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#FFD700",
-  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#6d28d9",
   "icons": [
-    { "src": "logo.jpeg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any maskable" },
-    { "src": "logo.jpeg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any maskable" }
-  ],
-  "categories": ["music", "entertainment"],
-  "shortcuts": [
-    { "name": "Search Music", "short_name": "Search", "url": "/?page=search" },
-    { "name": "Your Library", "short_name": "Library", "url": "/?page=library" }
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
   ]
 }
