@@ -76,136 +76,172 @@
   
 
 <style id="mk-injected-styles">
-/* ── Top progress bar ── */
-#mk-prog-rail {
+/* ── Shorties progress bar ── */
+#mk-prog {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 3px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,.1);
   z-index: 99999;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity .3s;
+  display: none;
 }
-#mk-prog-rail.mk-visible { opacity: 1; }
+#mk-prog.show { display: block; }
 #mk-prog-fill {
   height: 100%;
   width: 0%;
   background: hsl(50 100% 50%);
-  box-shadow: 0 0 8px hsl(50 100% 50% / .7);
-  transition: width .25s linear;
+  box-shadow: 0 0 8px hsl(50 100% 50% / .8);
+  transition: width .3s linear;
 }
 
-/* ── Bigger heart/like buttons ── */
-.mk-big-btn {
-  transform: scale(1.55) !important;
-  transition: transform .18s cubic-bezier(.175,.885,.32,1.4) !important;
-  display: inline-flex !important;
+/* ── Bigger Like / Skip buttons ── */
+.mk-side-btn {
+  transform: scale(1.5) !important;
+  transition: transform .15s ease !important;
 }
-.mk-big-btn:active { transform: scale(1.3) !important; }
+.mk-side-btn:active { transform: scale(1.25) !important; }
 
 /* ── Double-tap heart burst ── */
-@keyframes mk-pop {
-  0%   { transform:translate(-50%,-50%) scale(0); opacity:1 }
-  55%  { transform:translate(-50%,-50%) scale(1.5); opacity:1 }
-  100% { transform:translate(-50%,-50%) scale(2.2); opacity:0 }
+@keyframes mk-burst {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 1 }
+  60%  { transform: translate(-50%,-50%) scale(1.6); opacity: 1 }
+  100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0 }
 }
-.mk-heart-pop {
+.mk-heart {
   position: fixed;
   pointer-events: none;
-  font-size: 72px;
-  line-height: 1;
-  z-index: 999999;
+  font-size: 80px;
   color: hsl(50 100% 50%);
-  text-shadow: 0 0 20px hsl(50 100% 50%);
-  animation: mk-pop .55s ease-out forwards;
+  text-shadow: 0 0 24px hsl(50 100% 50%);
+  z-index: 999999;
+  animation: mk-burst .55s ease-out forwards;
 }
 </style>
 <script id="mk-injected-script">
 (function () {
   'use strict';
 
-  /* ══ 1. PROGRESS BAR via Radix Slider (no audio element needed) ══ */
-  var rail  = document.createElement('div');
-  rail.id   = 'mk-prog-rail';
-  rail.innerHTML = '<div id="mk-prog-fill"></div>';
-  document.body.appendChild(rail);
-  var fill  = rail.querySelector('#mk-prog-fill');
+  /* ── Progress bar element ── */
+  var prog = document.createElement('div');
+  prog.id  = 'mk-prog';
+  prog.innerHTML = '<div id="mk-prog-fill"></div>';
+  document.body.appendChild(prog);
+  var fill = prog.querySelector('#mk-prog-fill');
 
-  function syncProgress() {
-    // Radix slider thumb exposes aria-valuenow (0-100)
-    var sliders = document.querySelectorAll('[role="slider"][aria-valuemin="0"]');
-    // The progress slider is the first one (not volume)
-    // Volume slider usually has a different max, but both go 0-100
-    // Pick the slider that's inside the player bar or now-playing area
-    var best = null;
-    sliders.forEach(function(s) {
-      var max = parseFloat(s.getAttribute('aria-valuemax') || '0');
-      if (max === 100) best = s; // grab last one, player bar slider
+  var audio = null;    // native audio element (JioSaavn / shorties)
+  var isPlaying = false;
+
+  /* ── Find audio & wire progress ── */
+  function bindAudio(el) {
+    if (audio === el) return;
+    audio = el;
+    prog.classList.add('show');
+    el.addEventListener('timeupdate', function () {
+      if (el.duration) fill.style.width = (el.currentTime / el.duration * 100) + '%';
     });
-    if (best) {
-      var val = parseFloat(best.getAttribute('aria-valuenow') || '0');
-      if (!isNaN(val)) {
-        fill.style.width = val + '%';
-        rail.classList.toggle('mk-visible', val > 0 && val < 100);
-      }
-    }
-    requestAnimationFrame(syncProgress);
-  }
-  requestAnimationFrame(syncProgress);
-
-  /* ══ 2. BIGGER HEART / ACTION BUTTONS via SVG path sniffing ══ */
-  // Lucide Heart path fragment (unique enough)
-  var HEART_D = '20.84 4.61';
-  // Lucide ThumbsUp / ThumbsDown path fragments
-  var THUMB_D = 'M7 10v12';
-
-  function tagButtons() {
-    document.querySelectorAll('button').forEach(function(btn) {
-      if (btn.dataset.mkTagged) return;
-      var html = btn.innerHTML;
-      if (html.indexOf(HEART_D) > -1 || html.indexOf(THUMB_D) > -1) {
-        btn.classList.add('mk-big-btn');
-        btn.dataset.mkTagged = '1';
-      }
-    });
+    el.addEventListener('play',  function () { isPlaying = true;  syncPlayBtn(); });
+    el.addEventListener('pause', function () { isPlaying = false; syncPlayBtn(); });
+    el.addEventListener('ended', function () { isPlaying = false; fill.style.width = '0%'; syncPlayBtn(); });
   }
 
-  /* ══ 3. DOUBLE-TAP TO LIKE ══ */
+  /* ── Play/Pause button toggle ── */
+  // SVG paths used by Lucide Play and Pause icons
+  var PLAY_PATH  = 'polygon';   // <polygon points="5 3 19 12 5 21 5 3">
+  var PAUSE_PATH = 'line';      // <line x1="19"...> two lines
+
+  function syncPlayBtn() {
+    // Find the play/pause button — it contains either a polygon (play) or two rects/lines (pause)
+    // We look for a button that ALSO has visible "Play" or "Pause" text, OR is the big round play btn
+    var btns = document.querySelectorAll('button');
+    btns.forEach(function (btn) {
+      var txt = btn.textContent.trim();
+      if (txt === 'Play' || txt === 'Pause' || btn.dataset.mkPlay) {
+        btn.dataset.mkPlay = '1';
+        var svg = btn.querySelector('svg');
+        if (!svg) return;
+        if (isPlaying) {
+          // Replace icon with Pause (two rects)
+          svg.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+          // Replace text node
+          btn.childNodes.forEach(function (n) {
+            if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' Pause';
+          });
+        } else {
+          svg.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+          btn.childNodes.forEach(function (n) {
+            if (n.nodeType === 3 && n.textContent.trim()) n.textContent = ' Play';
+          });
+        }
+      }
+    });
+  }
+
+  /* ── Make Like + Skip buttons bigger ── */
+  function tagSideBtns() {
+    document.querySelectorAll('button').forEach(function (btn) {
+      if (btn.dataset.mkSide) return;
+      var txt = btn.textContent.trim();
+      // Like and Skip are the right-side action buttons
+      if (txt === 'Like' || txt === 'Skip') {
+        btn.classList.add('mk-side-btn');
+        btn.dataset.mkSide = '1';
+      }
+    });
+  }
+
+  /* ── Double-tap to like ── */
   var lastTap = 0;
-  document.addEventListener('touchend', function(e) {
+  document.addEventListener('touchend', function (e) {
     var now = Date.now();
     var gap = now - lastTap;
     lastTap = now;
-    if (gap < 280 && gap > 50) {
-      // find heart/like button
+    if (gap > 50 && gap < 280) {
       var likeBtn = null;
-      document.querySelectorAll('button').forEach(function(b) {
-        if (b.innerHTML.indexOf(HEART_D) > -1) likeBtn = b;
+      document.querySelectorAll('button').forEach(function (b) {
+        if (b.textContent.trim() === 'Like') likeBtn = b;
       });
       if (!likeBtn) return;
       likeBtn.click();
       var t = e.changedTouches[0];
       var el = document.createElement('div');
-      el.className = 'mk-heart-pop';
+      el.className = 'mk-heart';
       el.textContent = '♥';
       el.style.left = t.clientX + 'px';
       el.style.top  = t.clientY + 'px';
       document.body.appendChild(el);
-      setTimeout(function(){ el.remove(); }, 600);
+      setTimeout(function () { el.remove(); }, 600);
     }
   }, { passive: true });
 
-  /* ══ 4. MUTATION OBSERVER — re-tag on React re-renders ══ */
-  new MutationObserver(tagButtons)
-    .observe(document.body, { childList: true, subtree: true });
+  /* ── MutationObserver: pick up React renders ── */
+  new MutationObserver(function () {
+    var el = document.querySelector('audio');
+    if (el) bindAudio(el);
+    tagSideBtns();
+  }).observe(document.body, { childList: true, subtree: true });
 
-  // Initial pass after React mounts
-  setTimeout(tagButtons, 1000);
-  setTimeout(tagButtons, 3000);
+  // Also intercept click on play button to set isPlaying optimistically
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var txt = btn.textContent.trim();
+    if (txt === 'Play' || txt === 'Pause' || btn.dataset.mkPlay) {
+      // toggle optimistically; audio events will correct it
+      isPlaying = !isPlaying;
+      syncPlayBtn();
+      prog.classList.add('show');
+    }
+  }, true);
 
+  // Kick off
+  setTimeout(tagSideBtns, 800);
+  setTimeout(tagSideBtns, 2500);
 })();
 </script>
+
 
 
 </body>
