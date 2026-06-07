@@ -74,106 +74,196 @@
       _observer.observe(document.getElementById('root'), { childList: true });
     </script>
   
-<style>
-  /* Bigger Like/Dislike GUI */
-  button[data-state="active"], button[aria-label*="like" i], button[aria-label*="dislike" i], button[data-testid*="like" i], button[data-testid*="dislike" i] {
-    transform: scale(1.4) !important;
-    margin: 0 12px !important;
-    transition: transform 0.2s ease;
-  }
-  button[data-state="active"]:hover, button[aria-label*="like" i]:hover, button[aria-label*="dislike" i]:hover {
+
+<style id="mk-injected-styles">
+  /* Bigger action buttons */
+  .mk-action-btn {
     transform: scale(1.5) !important;
+    margin: 0 12px !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    z-index: 100;
   }
-  svg.lucide-thumbs-up, svg.lucide-thumbs-down, svg[data-icon*="thumb"] {
-    width: 32px !important;
-    height: 32px !important;
+  .mk-action-btn:hover, .mk-action-btn:active {
+    transform: scale(1.7) !important;
+  }
+  .mk-action-btn svg {
+    width: 36px !important;
+    height: 36px !important;
+    filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.5));
   }
   
-  /* Progress Bar for Shorties */
-  .custom-progress-bar {
-    position: absolute;
-    bottom: 120px;
+  /* Global Progress Bar */
+  #mk-global-progress {
+    position: fixed;
+    bottom: 20px;
     left: 5%;
     width: 90%;
     height: 6px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 3px;
-    z-index: 9999;
+    z-index: 99999;
     cursor: pointer;
-    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    display: none;
   }
-  .custom-progress-fill {
+  #mk-global-progress.active { display: block; }
+  #mk-global-progress-fill {
     height: 100%;
-    background: #a855f7;
-    border-radius: 3px;
     width: 0%;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    border-radius: 3px;
     transition: width 0.1s linear;
-    box-shadow: 0 0 10px #a855f7;
+    box-shadow: 0 0 8px #a855f7;
+  }
+
+  /* Play Overlay */
+  #mk-play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99998;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(5px);
+  }
+  #mk-play-overlay svg {
+    width: 48px;
+    height: 48px;
+    fill: white;
+    margin-left: 6px;
   }
 </style>
-<script>
+<script id="mk-injected-script">
 (function() {
-  function injectFeatures() {
-    const media = document.querySelector('audio') || document.querySelector('video');
-    let container = document.querySelector('[class*="short" i]') || document.querySelector('main') || document.body;
+  console.log("[MP3King] Injecting robust features...");
+
+  // 1. Progress Bar Setup
+  let progressBar = document.getElementById('mk-global-progress');
+  let progressFill = null;
+  if (!progressBar) {
+    progressBar = document.createElement('div');
+    progressBar.id = 'mk-global-progress';
+    progressBar.innerHTML = '<div id="mk-global-progress-fill"></div>';
+    document.body.appendChild(progressBar);
+    progressFill = document.getElementById('mk-global-progress-fill');
     
-    if (media && !document.getElementById('custom-progress-bar')) {
-      const bar = document.createElement('div');
-      bar.id = 'custom-progress-bar';
-      bar.className = 'custom-progress-bar';
-      bar.innerHTML = '<div class="custom-progress-fill"></div>';
-      if(getComputedStyle(container).position === 'static') container.style.position = 'relative';
-      container.appendChild(bar);
-      
-      media.addEventListener('timeupdate', () => {
-        const fill = bar.querySelector('.custom-progress-fill');
-        if (media.duration) {
-          fill.style.width = ((media.currentTime / media.duration) * 100) + '%';
-        }
-      });
-      
-      bar.addEventListener('click', (e) => {
-        const rect = bar.getBoundingClientRect();
-        const pos = (e.clientX - rect.left) / rect.width;
-        media.currentTime = pos * media.duration;
-      });
-    }
-
-    if (!window._doubleTapBound) {
-      window._doubleTapBound = true;
-      let lastTap = 0;
-      document.addEventListener('touchend', function(e) {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 500 && tapLength > 0) {
-          const likeBtn = document.querySelector('button[aria-label*="like" i], [data-testid*="like" i], [data-like-btn]');
-          if (likeBtn) likeBtn.click();
-        }
-        lastTap = currentTime;
-      });
-    }
+    progressBar.addEventListener('click', (e) => {
+      const media = document.querySelector('audio, video');
+      if (media && media.duration) {
+        const rect = progressBar.getBoundingClientRect();
+        media.currentTime = ((e.clientX - rect.left) / rect.width) * media.duration;
+      }
+    });
+  } else {
+    progressFill = document.getElementById('mk-global-progress-fill');
   }
-  setInterval(injectFeatures, 1000);
-})();
-</script>
 
+  // 2. Play Overlay Setup
+  let playOverlay = document.getElementById('mk-play-overlay');
+  if (!playOverlay) {
+    playOverlay = document.createElement('div');
+    playOverlay.id = 'mk-play-overlay';
+    playOverlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+    document.body.appendChild(playOverlay);
+  }
 
-<script>
-  document.addEventListener('click', function(e) {
-    const media = document.querySelector('audio') || document.querySelector('video');
+  // 3. MutationObserver to find media and buttons
+  const observer = new MutationObserver(() => {
+    // Find Media
+    const media = document.querySelector('audio, video');
+    if (media) {
+      progressBar.classList.add('active');
+      
+      // Position play overlay relative to media container
+      let container = media.closest('[class*="short"]') || media.parentElement;
+      if (container && getComputedStyle(container).position === 'static') {
+        container.style.position = 'relative';
+      }
+      if (container && !container.contains(playOverlay)) {
+        container.appendChild(playOverlay);
+      }
+
+      // Sync events
+      if (!media.dataset.mkBound) {
+        media.dataset.mkBound = 'true';
+        media.addEventListener('timeupdate', () => {
+          if (media.duration) {
+            progressFill.style.width = (media.currentTime / media.duration * 100) + '%';
+          }
+        });
+        media.addEventListener('play', () => { playOverlay.style.opacity = '0'; });
+        media.addEventListener('pause', () => { playOverlay.style.opacity = '1'; });
+      }
+    } else {
+      progressBar.classList.remove('active');
+    }
+
+    // Find and style action buttons dynamically
+    document.querySelectorAll('button, [role="button"]').forEach(btn => {
+      if (btn.classList.contains('mk-action-btn')) return;
+      const label = (btn.getAttribute('aria-label') || btn.getAttribute('data-testid') || '').toLowerCase();
+      const svg = btn.querySelector('svg');
+      const svgPath = svg ? svg.innerHTML : '';
+      
+      if (label.includes('like') || label.includes('dislike') || 
+          svgPath.includes('M7 10v12') || svgPath.includes('thumbs') || 
+          svgPath.includes('heart') || label.includes('thumb')) {
+        btn.classList.add('mk-action-btn');
+      }
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // 4. Double Tap to Like
+  let lastTap = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      const allBtns = Array.from(document.querySelectorAll('.mk-action-btn'));
+      const likeBtn = allBtns.find(btn => {
+        const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+        const svg = btn.querySelector('svg');
+        if (label.includes('like') || label.includes('heart')) return true;
+        if (svg && svg.innerHTML.includes('thumbs-up')) return true;
+        return false;
+      });
+      if (likeBtn) {
+        likeBtn.click();
+        // Visual feedback
+        likeBtn.style.transform = 'scale(2) !important';
+        setTimeout(() => { likeBtn.style.transform = ''; }, 200);
+      }
+    }
+    lastTap = now;
+  });
+
+  // 5. Click to Play/Pause toggle
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, input, [role="button"], #mk-global-progress')) return;
+    const media = document.querySelector('audio, video');
     if (!media) return;
     
-    // If user clicks on the media element itself or a generic short container
-    const isShortContainer = e.target.closest('[class*="short" i]') || e.target.closest('main');
-    if (e.target === media || (isShortContainer && !e.target.closest('button') && !e.target.closest('.custom-progress-bar'))) {
+    // Check if clicked within the media bounds or its container
+    const container = media.closest('[class*="short"]') || media.parentElement;
+    if (container && container.contains(e.target)) {
       if (media.paused) {
-        media.play();
+        media.play().catch(err => console.warn("Autoplay blocked", err));
       } else {
         media.pause();
       }
     }
-  });
-</script>
+  }, true);
 
+})();
+</script>
 </body>
 </html>
