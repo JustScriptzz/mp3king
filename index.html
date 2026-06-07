@@ -157,5 +157,23 @@
 })();
 </script>
 
+
+<script>
+  document.addEventListener('click', function(e) {
+    const media = document.querySelector('audio') || document.querySelector('video');
+    if (!media) return;
+    
+    // If user clicks on the media element itself or a generic short container
+    const isShortContainer = e.target.closest('[class*="short" i]') || e.target.closest('main');
+    if (e.target === media || (isShortContainer && !e.target.closest('button') && !e.target.closest('.custom-progress-bar'))) {
+      if (media.paused) {
+        media.play();
+      } else {
+        media.pause();
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
