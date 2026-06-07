@@ -1,343 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Error — MP3King</title>
-  <link rel="icon" href="/favicon.ico"/>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MP3King // Critical Error</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050507;--panel:#0b0b12;--accent:#facc15;--accent2:#eab308;--danger:#ef4444;--text:#f5f3ff;--muted:#8b8ba7;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(circle at top,#2b2400,#050507 60%);font-family:'Space Mono',monospace;color:var(--text);min-height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.grid{position:fixed;inset:0;background:linear-gradient(rgba(250,204,21,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(250,204,21,.08) 1px,transparent 1px);background-size:40px 40px;transform:perspective(700px) rotateX(70deg);transform-origin:center top;opacity:.35;}
+.stars,.stars:after,.stars:before{content:"";position:fixed;inset:0;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:120px 120px;animation:drift 40s linear infinite;opacity:.25;}
+.stars:before{transform:scale(1.5)}
+.stars:after{transform:scale(.8)}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(120px)}}
+.card{width:min(900px,92vw);background:rgba(10,10,18,.75);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:40px;position:relative;overflow:hidden;box-shadow:0 0 80px rgba(250,204,21,.18);}
+.card:before{content:"";position:absolute;inset:-200px;background:conic-gradient(from 0deg,var(--accent),transparent,var(--accent2),transparent,var(--danger));filter:blur(120px);opacity:.25;animation:spin 14s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.content{position:relative;z-index:2}
+.logo{font-family:Orbitron,sans-serif;font-weight:900;letter-spacing:4px;margin-bottom:20px;}
+.status{display:inline-block;padding:8px 14px;border:1px solid rgba(250,204,21,.4);border-radius:999px;color:#facc15;margin-bottom:16px;}
+.face{font-size:clamp(120px,18vw,220px);font-family:Orbitron,sans-serif;font-weight:900;line-height:1;text-shadow:0 0 30px rgba(250,204,21,.5);animation:flicker 5s infinite;}
+@keyframes flicker{95%,100%{opacity:1}96%{opacity:.7}97%{opacity:1}98%{opacity:.5}}
+h1{font-size:clamp(28px,4vw,52px);margin:10px 0;}
+p{color:var(--muted);line-height:1.8;}
+.actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;}
+.btn{padding:14px 24px;border-radius:14px;cursor:pointer;border:none;font-family:inherit;font-weight:bold;}
+.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
+.secondary{background:transparent;color:white;border:1px solid rgba(255,255,255,.15);}
+.footer{margin-top:24px;font-size:12px;opacity:.6;}
+.progress{height:8px;background:#12121b;border-radius:999px;overflow:hidden;margin-top:16px;}
+.bar{height:100%;width:67%;background:linear-gradient(90deg,var(--danger),var(--accent),var(--accent2));animation:load 3s ease-in-out infinite alternate;}
+@keyframes load{from{width:32%}to{width:89%}}
+.hex{position:absolute;border:1px solid rgba(250,204,21,.18);width:120px;height:120px;clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%);}
+.h1{top:-20px;right:30px}
+.h2{bottom:20px;left:-30px}
 
-    :root {
-      --bg: #050507;
-      --surface: #0e0e14;
-      --purple: #a855f7;
-      --red: #ef4444;
-      --red-dim: #7f1d1d;
-      --white: #f0eeff;
-      --muted: #555570;
-      --border: #1e1e2e;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--white);
-      font-family: 'Space Mono', monospace;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* animated noise grain overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: -50%;
-      width: 200%;
-      height: 200%;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      animation: grain 0.4s steps(1) infinite;
-    }
-
-    @keyframes grain {
-      0%   { transform: translate(0,0); }
-      10%  { transform: translate(-2%,-3%); }
-      20%  { transform: translate(3%,1%); }
-      30%  { transform: translate(-1%,4%); }
-      40%  { transform: translate(4%,-2%); }
-      50%  { transform: translate(-3%,2%); }
-      60%  { transform: translate(1%,-4%); }
-      70%  { transform: translate(-4%,3%); }
-      80%  { transform: translate(2%,-1%); }
-      90%  { transform: translate(-2%,4%); }
-      100% { transform: translate(3%,-3%); }
-    }
-
-    /* glowing orbs */
-    .orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-      animation: pulse 6s ease-in-out infinite alternate;
-    }
-    .orb-1 { width: 400px; height: 400px; background: rgba(168,85,247,0.12); top: -100px; left: -100px; animation-delay: 0s; }
-    .orb-2 { width: 300px; height: 300px; background: rgba(239,68,68,0.10); bottom: -80px; right: -80px; animation-delay: 2s; }
-    .orb-3 { width: 200px; height: 200px; background: rgba(168,85,247,0.08); top: 40%; left: 60%; animation-delay: 4s; }
-
-    @keyframes pulse {
-      from { opacity: 0.6; transform: scale(1); }
-      to   { opacity: 1;   transform: scale(1.15); }
-    }
-
-    /* scanlines */
-    .scanlines {
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.08) 2px,
-        rgba(0,0,0,0.08) 4px
-      );
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .container {
-      position: relative;
-      z-index: 2;
-      width: 100%;
-      max-width: 560px;
-      padding: 32px 24px;
-      animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* top bar */
-    .topbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 40px;
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-    }
-    .topbar img {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      object-fit: cover;
-      opacity: 0.7;
-    }
-    .topbar span { text-transform: uppercase; }
-    .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
-
-    /* big error code */
-    .error-code {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(96px, 22vw, 160px);
-      font-weight: 800;
-      line-height: 0.9;
-      letter-spacing: -0.04em;
-      background: linear-gradient(135deg, var(--red) 0%, var(--purple) 60%, #818cf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      position: relative;
-      margin-bottom: 4px;
-      animation: glitch 4s infinite;
-    }
-
-    @keyframes glitch {
-      0%, 90%, 100% { text-shadow: none; filter: none; }
-      91% { filter: blur(1px); }
-      92% { filter: none; text-shadow: 3px 0 var(--red), -3px 0 #818cf8; }
-      93% { filter: none; text-shadow: none; }
-      94% { text-shadow: -3px 0 var(--red), 3px 0 #818cf8; }
-      95% { text-shadow: none; }
-    }
-
-    .error-label {
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--red);
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .error-label::before {
-      content: '';
-      display: inline-block;
-      width: 20px;
-      height: 1px;
-      background: var(--red);
-    }
-
-    /* divider */
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, var(--red-dim), var(--border), transparent);
-      margin-bottom: 24px;
-    }
-
-    /* message box */
-    .message-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--red);
-      border-radius: 8px;
-      padding: 16px 20px;
-      margin-bottom: 32px;
-    }
-    .message-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--white);
-      margin-bottom: 8px;
-    }
-    .message-detail {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.7;
-      word-break: break-all;
-      font-style: italic;
-    }
-    .message-detail:empty::before {
-      content: 'No additional details available.';
-    }
-
-    /* terminal block */
-    .terminal {
-      background: #08080f;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 32px;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.8;
-    }
-    .terminal .line::before { content: '> '; color: var(--purple); }
-    .terminal .ok { color: #22c55e; }
-    .terminal .err { color: var(--red); }
-    .terminal .cursor {
-      display: inline-block;
-      width: 7px; height: 13px;
-      background: var(--purple);
-      vertical-align: middle;
-      animation: blink 1s step-end infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* actions */
-    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 13px 24px;
-      border-radius: 8px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
-    }
-    .btn:active { transform: scale(0.97); }
-
-    .btn-primary {
-      background: var(--purple);
-      color: #fff;
-      box-shadow: 0 0 20px rgba(168,85,247,0.3);
-    }
-    .btn-primary:hover {
-      filter: brightness(1.15);
-      box-shadow: 0 0 30px rgba(168,85,247,0.5);
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
-
-    /* timestamp */
-    .timestamp {
-      margin-top: 32px;
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.1em;
-      opacity: 0.5;
-    }
-  </style>
+/* TABS CSS */
+.tabs { margin-top: 30px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.06); background: #06060b; }
+.tab-headers { display: flex; background: #000; }
+.tab-btn { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-family: inherit; font-weight: bold; border: none; color: var(--muted); transition: all 0.3s; background: transparent; border-right: 1px solid rgba(255,255,255,.05); }
+.tab-btn:last-child { border-right: none; }
+.tab-btn.active.error-tab { background: rgba(239, 68, 68, 0.15); color: #ef4444; box-shadow: inset 0 -3px 0 #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+.tab-btn.active.info-tab { background: rgba(250, 204, 21, 0.1); color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.tab-content { padding: 20px; display: none; font-size: 14px; line-height: 1.6; color: #fff; max-height: 250px; overflow-y: auto; }
+.tab-content.active { display: block; }
+.error-log { background: #000; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; font-family: monospace; white-space: pre-wrap; color: #fca5a5; }
+.error-log .fatal { color: #ef4444; font-weight: bold; }
+</style>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-  <div class="scanlines"></div>
+<div class="stars"></div>
+<div class="grid"></div>
+<div class="card">
+<div class="hex h1"></div>
+<div class="hex h2"></div>
+<div class="content">
+<div class="logo">.MP3KING</div>
+<div class="status">FATAL ERROR</div>
+<div class="face">:(</div>
+<h1 id="title">Unexpected Error</h1>
+<p id="detail">The system encountered an unexpected problem, please wait while we totally undertand what the heck it' s going on :P</p>
 
-  <div class="container">
-    <div class="topbar">
-      <img src="/logo.jpeg" alt="MP3King"/>
-      <span>MP3King</span>
-      <div class="dot"></div>
-      <span>System Error</span>
-    </div>
+<div class="progress"><div class="bar"></div></div>
 
-    <div class="error-code">ERR</div>
-    <div class="error-label">something broke</div>
-    <div class="divider"></div>
-
-    <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
-      <button class="tab-btn active" onclick="document.getElementById('log-view').style.display='block'; document.getElementById('details-view').style.display='none'; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');" style="background: transparent; border: none; color: var(--white); padding: 8px 16px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 12px; border-bottom: 2px solid var(--red);">Error Logs</button>
-      <button class="tab-btn" onclick="document.getElementById('details-view').style.display='block'; document.getElementById('log-view').style.display='none'; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');" style="background: transparent; border: none; color: var(--muted); padding: 8px 16px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 12px;">Details</button>
-    </div>
-
-    <div id="log-view" class="terminal" style="display: block; background: #1a0505; border-left: 3px solid var(--red); color: var(--red); font-weight: bold; font-size: 13px; line-height: 1.6;">
-      <div class="line err" id="err-log-line" style="white-space: pre-wrap; word-break: break-all;">&gt; No stack trace or log available.</div>
-    </div>
-
-    <div id="details-view" class="message-box" style="display: none;">
-      <div class="message-title" id="err-title">An unexpected error occurred</div>
-      <div class="message-detail" id="err-detail"></div>
-    </div>
-
-
-    <div class="actions">
-      <button class="btn btn-primary" onclick="location.href='/'">
-        ↩ Back to MP3King
-      </button>
-      <button class="btn btn-ghost" onclick="location.reload()">
-        ↺ Retry
-      </button>
-    </div>
-
-    <div class="timestamp" id="ts"></div>
+<div class="tabs">
+  <div class="tab-headers">
+    <button class="tab-btn active error-tab" onclick="switchTab(event, 'errorLogs')">⚠ ERROR LOGS</button>
+    <button class="tab-btn info-tab" onclick="switchTab(event, 'systemInfo')">⚙ SYSTEM INFO</button>
   </div>
+  <div id="errorLogs" class="tab-content active">
+    <div class="error-log">
+<span class="fatal">[FATAL] CRASH DETECTED</span>
+<span id="log-location">> Location: Uncaught Exception / Unknown File</span>
+<span id="log-message">> Message: Loading crash parameters...</span>
+<span id="log-stack">> Detail: Stack trace unavailable</span>
+    </div>
+  </div>
+  <div id="systemInfo" class="tab-content">
+    <div class="line">[INFO] Audio engine ............. <span style="color:#22c55e">ONLINE</span></div>
+    <div class="line">[INFO] CDN nodes ................ <span style="color:#22c55e">ONLINE</span></div>
+    <div class="line">[WARN] Session validation ....... <span style="color:#f59e0b">RECONNECTING</span></div>
+    <div class="line">[FAIL] Request processing ....... <span style="color:#ef4444">INTERRUPTED</span></div>
+    <div class="line">[INFO] Recovery protocol ........ RUNNING</div>
+  </div>
+</div>
 
-  <script>
-    // Read error info from URL params
-    const params = new URLSearchParams(location.search);
-    const msg = params.get('msg');
-    const detail = params.get('detail');
+<div class="actions">
+<button class="btn primary" onclick="location.href='/'">Return Home</button>
+<button class="btn secondary" onclick="location.reload()">Try Again</button>
+</div>
 
-    if (msg) document.getElementById('err-title').textContent = decodeURIComponent(msg);
-    if (detail) {
-      document.getElementById('err-detail').textContent = decodeURIComponent(detail);
-      document.getElementById('err-log-line').innerHTML = '<span style="color: var(--red); font-weight: bold;">&gt; FATAL ERROR:</span><br>' + decodeURIComponent(detail).replace(/\n/g, '<br>');
-    }
+<div class="footer" id="time"></div>
+</div>
+</div>
 
-    // Timestamp
-    document.getElementById('ts').textContent =
-      'Error captured at ' + new Date().toISOString();
+<script>
+const p = new URLSearchParams(location.search);
+const msg = p.get("msg");
+const detail = p.get("detail");
 
-    // Fake connectivity check for the terminal
-    setTimeout(() => {
-      fetch('https://yssmsjlpftvbrpdgdjzx.supabase.co')
-        .then(() => { document.getElementById('t-supa').textContent = 'OK'; document.getElementById('t-supa').className = 'ok'; })
-        .catch(() => { document.getElementById('t-supa').textContent = 'UNREACHABLE'; document.getElementById('t-supa').className = 'err'; });
-    }, 800);
-  </script>
+if (msg) document.getElementById("title").textContent = decodeURIComponent(msg);
+if (detail) document.getElementById("detail").textContent = decodeURIComponent(detail);
+
+document.getElementById("time").textContent = "Captured: " + new Date().toISOString();
+
+// Update Error Log Tab dynamically
+if (msg || detail) {
+  document.getElementById('log-message').innerText = "> Message: " + (msg ? decodeURIComponent(msg) : "Unknown Error");
+  document.getElementById('log-stack').innerText = "> Detail: " + (detail ? decodeURIComponent(detail) : "No further details provided.");
+  document.getElementById('log-location').innerText = "> Location: Main Thread / " + window.location.pathname;
+} else {
+  document.getElementById('log-message').innerText = "> Message: App failed to initialize or crashed silently.";
+}
+
+setInterval(() => {
+  document.title = Math.random() > .5 ? ".mp3king // Critical Error" : ".mp3king // Recovering";
+}, 1500);
+
+function switchTab(evt, tabName) {
+  const contents = document.getElementsByClassName("tab-content");
+  for (let i = 0; i < contents.length; i++) {
+    contents[i].classList.remove("active");
+  }
+  const btns = document.getElementsByClassName("tab-btn");
+  for (let i = 0; i < btns.length; i++) {
+    btns[i].classList.remove("active");
+    btns[i].classList.remove("error-tab");
+    btns[i].classList.remove("info-tab");
+  }
+  document.getElementById(tabName).classList.add("active");
+  evt.currentTarget.classList.add("active");
+  if (tabName === 'errorLogs') evt.currentTarget.classList.add("error-tab");
+  else evt.currentTarget.classList.add("info-tab");
+}
+</script>
 </body>
 </html>
