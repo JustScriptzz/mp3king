@@ -34,21 +34,44 @@
   <body>
     <div id="root"></div>
     <script>
-      // Show a fallback if React crashes or takes too long
+      function goError(msg, detail) {
+        var url = '/error?msg=' + encodeURIComponent(msg || 'An unexpected error occurred');
+        if (detail) url += '&detail=' + encodeURIComponent(detail);
+        window.location.href = url;
+      }
+
+      // Redirect to /error if React hasn't rendered after 6s
       var _loadTimeout = setTimeout(function() {
         var root = document.getElementById('root');
         if (!root || root.children.length === 0) {
-          root.innerHTML = '<div style="min-height:100vh;background:#0a0a0a;display:flex;align-items:center;justify-content:center;font-family:sans-serif;padding:24px;box-sizing:border-box"><div style="text-align:center;max-width:400px"><img src="/logo.jpeg" style="width:80px;height:80px;border-radius:50%;margin-bottom:24px;object-fit:cover"/><h1 style="color:#fff;font-size:24px;margin:0 0 8px">MP3King</h1><p style="color:#a855f7;margin:0 0 24px">Having trouble connecting...</p><p style="color:#888;font-size:14px;margin:0 0 24px">The server may be waking up. Please wait a moment and try again.</p><button onclick="location.reload()" style="background:#7c3aed;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:16px;cursor:pointer">Retry</button></div></div>';
+          goError('App failed to load', 'The app took too long to start. The server may be waking up.');
         }
-      }, 5000);
+      }, 6000);
 
+      // Redirect to /error on any JS error
       window.addEventListener('error', function(e) {
+        // Ignore errors from third-party scripts or already on error page
+        if (window.location.pathname === '/error') return;
         clearTimeout(_loadTimeout);
+        goError(e.message || 'Runtime error', (e.filename ? e.filename + ' line ' + e.lineno : ''));
+      });
+
+      // Catch unhandled promise rejections too
+      window.addEventListener('unhandledrejection', function(e) {
+        if (window.location.pathname === '/error') return;
+        clearTimeout(_loadTimeout);
+        goError('Unhandled error', e.reason ? String(e.reason) : 'Promise rejected');
+      });
+
+      // Clear timeout once React mounts something
+      var _observer = new MutationObserver(function() {
         var root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = '<div style="min-height:100vh;background:#0a0a0a;display:flex;align-items:center;justify-content:center;font-family:sans-serif;padding:24px;box-sizing:border-box"><div style="text-align:center;max-width:400px"><img src="/logo.jpeg" style="width:80px;height:80px;border-radius:50%;margin-bottom:24px;object-fit:cover"/><h1 style="color:#fff;font-size:24px;margin:0 0 8px">MP3King</h1><p style="color:#ef4444;margin:0 0 8px">Something went wrong</p><p style="color:#888;font-size:13px;margin:0 0 24px;word-break:break-word">' + (e.message || 'Unknown error') + '</p><button onclick="location.reload()" style="background:#7c3aed;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:16px;cursor:pointer">Retry</button></div></div>';
+        if (root && root.children.length > 0) {
+          clearTimeout(_loadTimeout);
+          _observer.disconnect();
         }
       });
+      _observer.observe(document.getElementById('root'), { childList: true });
     </script>
   </body>
 </html>

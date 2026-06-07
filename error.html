@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Error — MP3King</title>
+  <link rel="icon" href="/favicon.ico"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050507;
+      --surface: #0e0e14;
+      --purple: #a855f7;
+      --red: #ef4444;
+      --red-dim: #7f1d1d;
+      --white: #f0eeff;
+      --muted: #555570;
+      --border: #1e1e2e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* animated noise grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      animation: grain 0.4s steps(1) infinite;
+    }
+
+    @keyframes grain {
+      0%   { transform: translate(0,0); }
+      10%  { transform: translate(-2%,-3%); }
+      20%  { transform: translate(3%,1%); }
+      30%  { transform: translate(-1%,4%); }
+      40%  { transform: translate(4%,-2%); }
+      50%  { transform: translate(-3%,2%); }
+      60%  { transform: translate(1%,-4%); }
+      70%  { transform: translate(-4%,3%); }
+      80%  { transform: translate(2%,-1%); }
+      90%  { transform: translate(-2%,4%); }
+      100% { transform: translate(3%,-3%); }
+    }
+
+    /* glowing orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulse 6s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 400px; height: 400px; background: rgba(168,85,247,0.12); top: -100px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 300px; height: 300px; background: rgba(239,68,68,0.10); bottom: -80px; right: -80px; animation-delay: 2s; }
+    .orb-3 { width: 200px; height: 200px; background: rgba(168,85,247,0.08); top: 40%; left: 60%; animation-delay: 4s; }
+
+    @keyframes pulse {
+      from { opacity: 0.6; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.15); }
+    }
+
+    /* scanlines */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 560px;
+      padding: 32px 24px;
+      animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 40px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .topbar img {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      opacity: 0.7;
+    }
+    .topbar span { text-transform: uppercase; }
+    .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+
+    /* big error code */
+    .error-code {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(96px, 22vw, 160px);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--red) 0%, var(--purple) 60%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      margin-bottom: 4px;
+      animation: glitch 4s infinite;
+    }
+
+    @keyframes glitch {
+      0%, 90%, 100% { text-shadow: none; filter: none; }
+      91% { filter: blur(1px); }
+      92% { filter: none; text-shadow: 3px 0 var(--red), -3px 0 #818cf8; }
+      93% { filter: none; text-shadow: none; }
+      94% { text-shadow: -3px 0 var(--red), 3px 0 #818cf8; }
+      95% { text-shadow: none; }
+    }
+
+    .error-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .error-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    /* divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, var(--red-dim), var(--border), transparent);
+      margin-bottom: 24px;
+    }
+
+    /* message box */
+    .message-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+    .message-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .message-detail {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      word-break: break-all;
+      font-style: italic;
+    }
+    .message-detail:empty::before {
+      content: 'No additional details available.';
+    }
+
+    /* terminal block */
+    .terminal {
+      background: #08080f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 32px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .terminal .line::before { content: '> '; color: var(--purple); }
+    .terminal .ok { color: #22c55e; }
+    .terminal .err { color: var(--red); }
+    .terminal .cursor {
+      display: inline-block;
+      width: 7px; height: 13px;
+      background: var(--purple);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* actions */
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 24px;
+      border-radius: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--purple);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(168,85,247,0.3);
+    }
+    .btn-primary:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 0 30px rgba(168,85,247,0.5);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
+
+    /* timestamp */
+    .timestamp {
+      margin-top: 32px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="scanlines"></div>
+
+  <div class="container">
+    <div class="topbar">
+      <img src="/logo.jpeg" alt="MP3King"/>
+      <span>MP3King</span>
+      <div class="dot"></div>
+      <span>System Error</span>
+    </div>
+
+    <div class="error-code">ERR</div>
+    <div class="error-label">something broke</div>
+    <div class="divider"></div>
+
+    <div class="message-box">
+      <div class="message-title" id="err-title">An unexpected error occurred</div>
+      <div class="message-detail" id="err-detail"></div>
+    </div>
+
+    <div class="terminal">
+      <div class="line">checking audio engine... <span class="ok">OK</span></div>
+      <div class="line">connecting to supabase... <span id="t-supa">checking</span></div>
+      <div class="line">loading user session... <span class="err">FAILED</span></div>
+      <div class="line">initiating recovery... <span class="cursor"></span></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="location.href='/'">
+        ↩ Back to MP3King
+      </button>
+      <button class="btn btn-ghost" onclick="location.reload()">
+        ↺ Retry
+      </button>
+    </div>
+
+    <div class="timestamp" id="ts"></div>
+  </div>
+
+  <script>
+    // Read error info from URL params
+    const params = new URLSearchParams(location.search);
+    const msg = params.get('msg');
+    const detail = params.get('detail');
+
+    if (msg) document.getElementById('err-title').textContent = decodeURIComponent(msg);
+    if (detail) document.getElementById('err-detail').textContent = decodeURIComponent(detail);
+
+    // Timestamp
+    document.getElementById('ts').textContent =
+      'Error captured at ' + new Date().toISOString();
+
+    // Fake connectivity check for the terminal
+    setTimeout(() => {
+      fetch('https://yssmsjlpftvbrpdgdjzx.supabase.co')
+        .then(() => { document.getElementById('t-supa').textContent = 'OK'; document.getElementById('t-supa').className = 'ok'; })
+        .catch(() => { document.getElementById('t-supa').textContent = 'UNREACHABLE'; document.getElementById('t-supa').className = 'err'; });
+    }, 800);
+  </script>
+</body>
+</html>

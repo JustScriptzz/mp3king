@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/error", "destination": "/error.html" },
+    { "source": "/((?!assets|error|favicon|logo|manifest|robots|placeholder|~flock).*)", "destination": "/" }
   ]
 }
