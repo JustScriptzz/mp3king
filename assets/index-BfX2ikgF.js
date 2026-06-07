@@ -559,16 +559,39 @@ const main=document.querySelector("main");
 if(main){const prev=main.style.overflow;main.style.overflow="hidden";return()=>{main.style.overflow=prev;}}
 },[]);
 y.useEffect(()=>{
-const qs=["top hits 2025","viral music 2025","trending songs","chart hits 2025"];
-hh(qs[Math.floor(Math.random()*qs.length)],20).then(r=>{setTs(r);setLoad(false)}).catch(()=>setLoad(false));
+fetch("https://itunes.apple.com/us/rss/topsongs/limit=20/json")
+.then(r=>r.json())
+.then(json=>{
+const entries=json.feed?.entry||[];
+const tracks=entries.map(e=>({
+id:e.id?.attributes?.["im:id"]||String(Math.random()),
+title:e["im:name"]?.label||"Unknown",
+artist:e["im:artist"]?.label||"Unknown",
+album:e["im:collection"]?.["im:name"]?.label||"",
+duration:"0:00",
+coverUrl:(e["im:image"]?.[2]?.label||e["im:image"]?.[0]?.label||"/placeholder.svg").replace("170x170bb","600x600bb")
+}));
+setTs(tracks);setLoad(false);
+})
+.catch(()=>setLoad(false));
 },[]);
 const fetchVid=y.useCallback(async t=>{
 if(vRef.current[t.id])return;
 vRef.current[t.id]="loading";
 const q=encodeURIComponent(t.title+" "+t.artist+" official music video");
+const piped=["https://pipedapi.kavin.rocks","https://piped-api.codespace.cz","https://api.piped.projectsegfau.lt"];
+for(const inst of piped){
+try{
+const r=await fetch(inst+"/search?q="+q+"&filter=videos",{signal:AbortSignal.timeout(6000)});
+if(!r.ok)continue;
+const d=await r.json();
+const v=(d.items||[]).find(x=>x.url&&x.url.startsWith("/watch?v="));
+if(v){const vid=v.url.slice(9);vRef.current[t.id]=vid;setVids(p=>({...p,[t.id]:vid}));return;}
+}catch{}
+}
 for(const inst of PF){
 try{
-const r=await fetch(inst+"/api/v1/search?q="+q+"&type=video",{signal:AbortSignal.timeout(5000)});
+const r=await fetch(inst+"/api/v1/search?q="+q+"&type=video",{signal:AbortSignal.timeout(6000)});
 if(!r.ok)continue;
 const d=await r.json();
 const v=Array.isArray(d)&&d.find(x=>x.type==="video"&&x.videoId);
