@@ -289,17 +289,20 @@
     <div class="error-label">something broke</div>
     <div class="divider"></div>
 
-    <div class="message-box">
+    <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
+      <button class="tab-btn active" onclick="document.getElementById('log-view').style.display='block'; document.getElementById('details-view').style.display='none'; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');" style="background: transparent; border: none; color: var(--white); padding: 8px 16px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 12px; border-bottom: 2px solid var(--red);">Error Logs</button>
+      <button class="tab-btn" onclick="document.getElementById('details-view').style.display='block'; document.getElementById('log-view').style.display='none'; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');" style="background: transparent; border: none; color: var(--muted); padding: 8px 16px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 12px;">Details</button>
+    </div>
+
+    <div id="log-view" class="terminal" style="display: block; background: #1a0505; border-left: 3px solid var(--red); color: var(--red); font-weight: bold; font-size: 13px; line-height: 1.6;">
+      <div class="line err" id="err-log-line" style="white-space: pre-wrap; word-break: break-all;">&gt; No stack trace or log available.</div>
+    </div>
+
+    <div id="details-view" class="message-box" style="display: none;">
       <div class="message-title" id="err-title">An unexpected error occurred</div>
       <div class="message-detail" id="err-detail"></div>
     </div>
 
-    <div class="terminal">
-      <div class="line">checking audio engine... <span class="ok">OK</span></div>
-      <div class="line">connecting to supabase... <span id="t-supa">checking</span></div>
-      <div class="line">loading user session... <span class="err">FAILED</span></div>
-      <div class="line">initiating recovery... <span class="cursor"></span></div>
-    </div>
 
     <div class="actions">
       <button class="btn btn-primary" onclick="location.href='/'">
@@ -320,7 +323,10 @@
     const detail = params.get('detail');
 
     if (msg) document.getElementById('err-title').textContent = decodeURIComponent(msg);
-    if (detail) document.getElementById('err-detail').textContent = decodeURIComponent(detail);
+    if (detail) {
+      document.getElementById('err-detail').textContent = decodeURIComponent(detail);
+      document.getElementById('err-log-line').innerHTML = '<span style="color: var(--red); font-weight: bold;">&gt; FATAL ERROR:</span><br>' + decodeURIComponent(detail).replace(/\n/g, '<br>');
+    }
 
     // Timestamp
     document.getElementById('ts').textContent =

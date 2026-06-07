@@ -73,5 +73,89 @@
       });
       _observer.observe(document.getElementById('root'), { childList: true });
     </script>
-  </body>
+  
+<style>
+  /* Bigger Like/Dislike GUI */
+  button[data-state="active"], button[aria-label*="like" i], button[aria-label*="dislike" i], button[data-testid*="like" i], button[data-testid*="dislike" i] {
+    transform: scale(1.4) !important;
+    margin: 0 12px !important;
+    transition: transform 0.2s ease;
+  }
+  button[data-state="active"]:hover, button[aria-label*="like" i]:hover, button[aria-label*="dislike" i]:hover {
+    transform: scale(1.5) !important;
+  }
+  svg.lucide-thumbs-up, svg.lucide-thumbs-down, svg[data-icon*="thumb"] {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  /* Progress Bar for Shorties */
+  .custom-progress-bar {
+    position: absolute;
+    bottom: 120px;
+    left: 5%;
+    width: 90%;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    z-index: 9999;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .custom-progress-fill {
+    height: 100%;
+    background: #a855f7;
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px #a855f7;
+  }
+</style>
+<script>
+(function() {
+  function injectFeatures() {
+    const media = document.querySelector('audio') || document.querySelector('video');
+    let container = document.querySelector('[class*="short" i]') || document.querySelector('main') || document.body;
+    
+    if (media && !document.getElementById('custom-progress-bar')) {
+      const bar = document.createElement('div');
+      bar.id = 'custom-progress-bar';
+      bar.className = 'custom-progress-bar';
+      bar.innerHTML = '<div class="custom-progress-fill"></div>';
+      if(getComputedStyle(container).position === 'static') container.style.position = 'relative';
+      container.appendChild(bar);
+      
+      media.addEventListener('timeupdate', () => {
+        const fill = bar.querySelector('.custom-progress-fill');
+        if (media.duration) {
+          fill.style.width = ((media.currentTime / media.duration) * 100) + '%';
+        }
+      });
+      
+      bar.addEventListener('click', (e) => {
+        const rect = bar.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        media.currentTime = pos * media.duration;
+      });
+    }
+
+    if (!window._doubleTapBound) {
+      window._doubleTapBound = true;
+      let lastTap = 0;
+      document.addEventListener('touchend', function(e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 500 && tapLength > 0) {
+          const likeBtn = document.querySelector('button[aria-label*="like" i], [data-testid*="like" i], [data-like-btn]');
+          if (likeBtn) likeBtn.click();
+        }
+        lastTap = currentTime;
+      });
+    }
+  }
+  setInterval(injectFeatures, 1000);
+})();
+</script>
+
+</body>
 </html>
