@@ -6,255 +6,44 @@
 <title>MP3King // Critical Error</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{
---bg:#050507;
---panel:#0b0b12;
---accent:#facc15;
---accent2:#eab308;
---danger:#f59e0b;
---text:#f5f3ff;
---muted:#8b8ba7;
-}
+:root{--bg:#050507;--panel:#0b0b12;--accent:#facc15;--accent2:#eab308;--danger:#f59e0b;--text:#f5f3ff;--muted:#8b8ba7;}
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-background:radial-gradient(circle at top,#2b2400,#050507 60%);
-font-family:'Space Mono',monospace;
-color:var(--text);
-min-height:100vh;
-overflow:hidden;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-.grid{
-position:fixed;
-inset:0;
-background:
-linear-gradient(rgba(250,204,21,.08) 1px,transparent 1px),
-linear-gradient(90deg,rgba(250,204,21,.08) 1px,transparent 1px);
-background-size:40px 40px;
-transform:perspective(700px) rotateX(70deg);
-transform-origin:center top;
-opacity:.35;
-}
-.stars,.stars:after,.stars:before{
-content:"";
-position:fixed;
-inset:0;
-background-image:
-radial-gradient(circle,#fff 1px,transparent 1px);
-background-size:120px 120px;
-animation:drift 40s linear infinite;
-opacity:.25;
-}
-.stars:before{transform:scale(1.5)}
-.stars:after{transform:scale(.8)}
-@keyframes drift{
-from{transform:translateY(0)}
-to{transform:translateY(120px)}
-}
-.card{
-width:min(900px,92vw);
-background:rgba(10,10,18,.75);
-backdrop-filter:blur(20px);
-border:1px solid rgba(255,255,255,.08);
-border-radius:24px;
-padding:40px;
-position:relative;
-overflow:hidden;
-box-shadow:0 0 80px rgba(250,204,21,.18);
-}
-.card:before{
-content:"";
-position:absolute;
-inset:-200px;
-background:conic-gradient(from 0deg,var(--accent),transparent,var(--accent2),transparent,var(--danger));
-filter:blur(120px);
-opacity:.25;
-animation:spin 14s linear infinite;
-}
-@keyframes spin{
-to{transform:rotate(360deg)}
-}
+body{background:radial-gradient(circle at top,#2b2400,#050507 60%);font-family:'Space Mono',monospace;color:var(--text);min-height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.grid{position:fixed;inset:0;background:linear-gradient(rgba(250,204,21,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(250,204,21,.08) 1px,transparent 1px);background-size:40px 40px;transform:perspective(700px) rotateX(70deg);transform-origin:center top;opacity:.35;}
+.stars,.stars:after,.stars:before{content:"";position:fixed;inset:0;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:120px 120px;animation:drift 40s linear infinite;opacity:.25;}
+.stars:before{transform:scale(1.5)}.stars:after{transform:scale(.8)}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(120px)}}
+.card{width:min(900px,92vw);background:rgba(10,10,18,.75);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:40px;position:relative;overflow:hidden;box-shadow:0 0 80px rgba(250,204,21,.18);}
+.card:before{content:"";position:absolute;inset:-200px;background:conic-gradient(from 0deg,var(--accent),transparent,var(--accent2),transparent,var(--danger));filter:blur(120px);opacity:.25;animation:spin 14s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 .content{position:relative;z-index:2}
-.logo{
-font-family:Orbitron,sans-serif;
-font-weight:900;
-letter-spacing:4px;
-margin-bottom:20px;
-}
-.status{
-display:inline-block;
-padding:8px 14px;
-border:1px solid rgba(250,204,21,.4);
-border-radius:999px;
-color:#facc15;
-margin-bottom:16px;
-}
-.face{
-font-size:clamp(120px,18vw,220px);
-font-family:Orbitron,sans-serif;
-font-weight:900;
-line-height:1;
-text-shadow:0 0 30px rgba(250,204,21,.5);
-animation:flicker 5s infinite;
-}
-@keyframes flicker{
-95%,100%{opacity:1}
-96%{opacity:.7}
-97%{opacity:1}
-98%{opacity:.5}
-}
-.terminal{
-background:rgba(0,0,0,.5);
-border:1px solid rgba(250,204,21,.15);
-border-radius:12px;
-padding:16px;
-margin-top:20px;
-font-size:13px;
-overflow:hidden;
-}
-/* Tab strip */
-.tab-strip{
-display:flex;
-gap:2px;
-margin-bottom:12px;
-border-bottom:1px solid rgba(250,204,21,.15);
-padding-bottom:8px;
-}
-.tab{
-padding:4px 12px;
-border-radius:6px 6px 0 0;
-cursor:pointer;
-font-size:11px;
-letter-spacing:.05em;
-color:var(--muted);
-border:1px solid transparent;
-border-bottom:none;
-transition:all .2s;
-}
-.tab.active{
-color:#facc15;
-background:rgba(250,204,21,.08);
-border-color:rgba(250,204,21,.2);
-}
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-
-/* System info lines */
-.line{padding:5px 0}
-.ok{color:#22c55e}
-.err{color:#ef4444}
-.warn{color:#f59e0b}
-
-/* Error log panel */
-.err-log{
-display:flex;
-flex-direction:column;
-gap:6px;
-}
-.log-row{
-display:flex;
-align-items:flex-start;
-gap:10px;
-padding:6px 10px;
-border-radius:6px;
-font-size:12px;
-line-height:1.5;
-}
-.log-row.fatal{
-background:rgba(239,68,68,.12);
-border:1px solid rgba(239,68,68,.3);
-box-shadow:0 0 12px rgba(239,68,68,.1);
-}
-.log-row .badge{
-font-size:10px;
-font-weight:700;
-letter-spacing:.08em;
-padding:2px 7px;
-border-radius:4px;
-flex-shrink:0;
-margin-top:1px;
-}
-.log-row.fatal .badge{
-background:rgba(239,68,68,.3);
-color:#fca5a5;
-}
-.log-row .msg-col{flex:1;word-break:break-all}
-.log-row .loc{
-color:#fca5a5;
-font-size:11px;
-margin-top:2px;
-display:block;
-}
-.log-row .hl{
-/* highlight the bad line */
-background:rgba(239,68,68,.25);
-border-left:3px solid #ef4444;
-padding:4px 8px;
-border-radius:0 4px 4px 0;
-margin-top:6px;
-display:block;
-color:#fca5a5;
-font-family:'Space Mono',monospace;
-white-space:pre-wrap;
-word-break:break-all;
-}
-.no-err{color:var(--muted);font-size:12px;padding:8px 0}
-
-.actions{
-display:flex;
-gap:14px;
-flex-wrap:wrap;
-margin-top:28px;
-}
-.btn{
-padding:14px 24px;
-border-radius:14px;
-cursor:pointer;
-border:none;
-font-family:inherit;
-font-weight:bold;
-}
-.primary{
-background:linear-gradient(135deg,var(--accent),var(--accent2));
-color:white;
-}
-.secondary{
-background:transparent;
-color:white;
-border:1px solid rgba(255,255,255,.15);
-}
-.footer{
-margin-top:24px;
-font-size:12px;
-opacity:.6;
-}
-.progress{
-height:8px;
-background:#12121b;
-border-radius:999px;
-overflow:hidden;
-margin-top:16px;
-}
-.bar{
-height:100%;
-width:67%;
-background:linear-gradient(90deg,var(--danger),var(--accent),var(--accent2));
-animation:load 3s ease-in-out infinite alternate;
-}
-@keyframes load{
-from{width:32%}
-to{width:89%}
-}
-.hex{
-position:absolute;
-border:1px solid rgba(250,204,21,.18);
-width:120px;height:120px;
-clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%);
-}
-.h1{top:-20px;right:30px}
-.h2{bottom:20px;left:-30px}
+.logo{font-family:Orbitron,sans-serif;font-weight:900;letter-spacing:4px;margin-bottom:20px;}
+.status{display:inline-block;padding:8px 14px;border:1px solid rgba(250,204,21,.4);border-radius:999px;color:#facc15;margin-bottom:16px;}
+.face{font-size:clamp(120px,18vw,220px);font-family:Orbitron,sans-serif;font-weight:900;line-height:1;text-shadow:0 0 30px rgba(250,204,21,.5);animation:flicker 5s infinite;}
+@keyframes flicker{95%,100%{opacity:1}96%{opacity:.7}97%{opacity:1}98%{opacity:.5}}
+h1{font-family:Orbitron,sans-serif;font-size:clamp(1rem,3vw,1.5rem);margin:16px 0 8px;}
+#detail{font-size:13px;color:var(--muted);line-height:1.6;}
+.progress{height:8px;background:#12121b;border-radius:999px;overflow:hidden;margin-top:16px;}
+.bar{height:100%;width:67%;background:linear-gradient(90deg,var(--danger),var(--accent),var(--accent2));animation:load 3s ease-in-out infinite alternate;}
+@keyframes load{from{width:32%}to{width:89%}}
+/* Tabs */
+.tabs{margin-top:20px;}
+.tab-bar{display:flex;border-bottom:1px solid rgba(255,255,255,.1);}
+.tab-btn{padding:8px 18px;background:none;border:none;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:1px;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;background:#08080f;border:1px solid rgba(255,255,255,.07);border-top:none;border-radius:0 0 12px 12px;padding:14px;max-height:160px;overflow-y:auto;font-size:12px;line-height:1.7;}
+.tab-panel.active{display:block;}
+.log-line{padding:2px 0;white-space:pre-wrap;word-break:break-all;}
+.log-ok{color:#22c55e}.log-warn{color:#f59e0b}.log-info{color:#8b8ba7}
+.log-fail{color:#ef4444;background:rgba(239,68,68,.13);border-left:3px solid #ef4444;padding:3px 8px;border-radius:0 4px 4px 0;font-weight:bold;}
+.tab-panel::-webkit-scrollbar{width:4px}.tab-panel::-webkit-scrollbar-track{background:transparent}.tab-panel::-webkit-scrollbar-thumb{background:rgba(250,204,21,.3);border-radius:4px}
+.actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;}
+.btn{padding:14px 24px;border-radius:14px;cursor:pointer;border:none;font-family:inherit;font-weight:bold;}
+.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
+.secondary{background:transparent;color:white;border:1px solid rgba(255,255,255,.15);}
+.footer{margin-top:24px;font-size:12px;opacity:.6;}
+.hex{position:absolute;border:1px solid rgba(250,204,21,.18);width:120px;height:120px;clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%);}
+.h1{top:-20px;right:30px}.h2{bottom:20px;left:-30px}
 </style>
 </head>
 <body>
@@ -268,96 +57,66 @@ clip-path:polygon(25% 6%,75% 6%,100% 50%,75% 94%,25% 94%,0 50%);
 <div class="status">FATAL ERROR</div>
 <div class="face">:(</div>
 <h1 id="title">Unexpected Error</h1>
-<p id="detail">The system encountered an unexpected problem, please wait while we totally understand what the heck is going on :P</p>
-
+<p id="detail">The system encountered an unexpected problem, please wait while we totally understand what the heck it's going on :P</p>
 <div class="progress"><div class="bar"></div></div>
-
-<div class="terminal">
-  <div class="tab-strip">
-    <div class="tab active" onclick="switchTab('sys')">SYSTEM</div>
-    <div class="tab" onclick="switchTab('log')">ERROR LOG</div>
+<div class="tabs">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('log',this)">Error Log</button>
+    <button class="tab-btn" onclick="showTab('trace',this)">Stack Trace</button>
   </div>
-
-  <!-- System status panel (always static) -->
-  <div class="tab-panel active" id="tab-sys">
-    <div class="line">[INFO] Audio engine ............. <span class="ok">ONLINE</span></div>
-    <div class="line">[INFO] CDN nodes ................ <span class="ok">ONLINE</span></div>
-    <div class="line">[WARN] Session validation ....... <span class="warn">RECONNECTING</span></div>
-    <div class="line">[FAIL] Request processing ....... <span class="err">INTERRUPTED</span></div>
-    <div class="line">[INFO] Recovery protocol ........ RUNNING</div>
-  </div>
-
-  <!-- Error log panel — populated from URL params -->
-  <div class="tab-panel" id="tab-log">
-    <div class="err-log" id="err-log-content">
-      <div class="no-err">No error details captured.</div>
-    </div>
-  </div>
+  <div class="tab-panel active" id="tab-log"></div>
+  <div class="tab-panel" id="tab-trace"></div>
 </div>
-
 <div class="actions">
 <button class="btn primary" onclick="location.href='/'">Return Home</button>
 <button class="btn secondary" onclick="location.reload()">Try Again</button>
 </div>
-
 <div class="footer" id="time"></div>
 </div>
 </div>
-
 <script>
-function switchTab(id) {
-  document.querySelectorAll('.tab').forEach(function(t,i){
-    t.classList.toggle('active', (i===0&&id==='sys')||(i===1&&id==='log'));
-  });
-  document.querySelectorAll('.tab-panel').forEach(function(p){
-    p.classList.remove('active');
-  });
-  document.getElementById('tab-'+id).classList.add('active');
+function showTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
 }
-
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var p=new URLSearchParams(location.search);
+var msg=p.get('msg')?decodeURIComponent(p.get('msg')):'Unknown Error';
+var detail=p.get('detail')?decodeURIComponent(p.get('detail')):'';
+var stack=p.get('stack')?decodeURIComponent(p.get('stack')):'';
+document.getElementById('title').textContent=msg;
+if(detail)document.getElementById('detail').textContent=detail;
+document.getElementById('time').textContent='Captured: '+new Date().toISOString();
+// Error Log tab
 (function(){
-  var p = new URLSearchParams(location.search);
-  var msg    = p.get('msg')    ? decodeURIComponent(p.get('msg'))    : null;
-  var detail = p.get('detail') ? decodeURIComponent(p.get('detail')) : null;
-
-  if (msg)    document.getElementById('title').textContent  = msg;
-  if (detail) document.getElementById('detail').textContent = detail;
-
-  document.getElementById('time').textContent = 'Captured: ' + new Date().toISOString();
-
-  // Build the error log tab
-  var logEl = document.getElementById('err-log-content');
-  if (msg || detail) {
-    var rows = '';
-
-    if (msg) {
-      rows += '<div class="log-row fatal">'
-            + '<span class="badge">FATAL</span>'
-            + '<span class="msg-col">' + escHtml(msg)
-            + (detail ? '<span class="loc">' + escHtml(detail) + '</span>' : '')
-            + '<span class="hl">&gt; ' + escHtml(msg) + '</span>'
-            + '</span>'
-            + '</div>';
-    }
-
-    logEl.innerHTML = rows || '<div class="no-err">No error details captured.</div>';
-
-    // Auto-switch to the log tab so the error is immediately visible
-    switchTab('log');
-  }
-
-  function escHtml(s){
-    return String(s)
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
-  }
-
-  setInterval(function(){
-    document.title = Math.random() > .5 ? '.mp3king // Critical Error' : '.mp3king // Recovering';
-  }, 1500);
+  var lines=[
+    {c:'log-ok',t:'[OK]   Runtime ........................ LOADED'},
+    {c:'log-ok',t:'[OK]   Audio engine ................... ONLINE'},
+    {c:'log-ok',t:'[OK]   CDN nodes ....................... ONLINE'},
+    {c:'log-warn',t:'[WARN] Session validation ............. RECONNECTING'},
+    {c:'log-fail',t:'[FAIL] '+(detail||msg)},
+    {c:'log-info',t:'[INFO] Recovery protocol ............. RUNNING'},
+  ];
+  var el=document.getElementById('tab-log');
+  el.innerHTML=lines.map(function(l){return'<div class="log-line '+l.c+'">'+esc(l.t)+'</div>';}).join('');
+  var f=el.querySelector('.log-fail');
+  if(f)setTimeout(function(){f.scrollIntoView({block:'center'});},50);
 })();
+// Stack Trace tab
+(function(){
+  var el=document.getElementById('tab-trace');
+  var raw=stack||detail||'';
+  if(!raw){el.innerHTML='<div class="log-line log-info">No stack trace available.</div>';return;}
+  var tl=raw.split(/\n|\\n/).filter(function(l){return l.trim();});
+  if(!tl.length)tl=[raw];
+  el.innerHTML=tl.map(function(line,i){
+    var err=i===0||/error|exception|fail|line\s+\d+/i.test(line);
+    return'<div class="log-line '+(err?'log-fail':'log-info')+'">'+esc(line)+'</div>';
+  }).join('');
+})();
+setInterval(function(){document.title=Math.random()>.5?'.mp3king // Critical Error':'.mp3king // Recovering';},1500);
 </script>
 </body>
 </html>
