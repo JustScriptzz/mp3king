@@ -555,7 +555,7 @@ const[vids,setVids]=y.useState({});
 const sRef=y.useRef(null);
 const lastTapRef=y.useRef({id:null,time:0});
 const[barPct,setBarPct]=y.useState(0);
-y.useEffect(()=>{const iv=setInterval(()=>{const a=window._mp3Au;setBarPct(a&&a.duration>0?Math.min(a.currentTime/a.duration*100,100):0);},300);return()=>clearInterval(iv);},[]);
+y.useEffect(()=>{const iv=setInterval(()=>{const a=window._mp3Au;setBarPct(a&&Number.isFinite(a.duration)&&a.duration>0?Math.min(a.currentTime/a.duration*100,100):0);},300);return()=>clearInterval(iv);},[]);
 const[page,setPage]=y.useState(0);
 const[loadingMore,setLoadingMore]=y.useState(false);
 const[likes,setLikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_likes")||"[]"))}catch{return new Set()}});
@@ -579,7 +579,7 @@ if(main){const prev=main.style.overflow;main.style.overflow="hidden";return()=>{
 y.useEffect(()=>{
 const rq=["pop hits 2025","hip hop trending 2025","indie rock 2025","electronic dance 2025","r&b soul hits","latin hits 2025","k-pop 2025","viral songs 2025","alternative hits","rap bangers 2025"];
 const q=rq[Math.floor(Math.random()*rq.length)];
-hh(q,20).then(tracks=>{setTs(tracks);setLoad(false);}).catch(()=>setLoad(false));
+hh(q,20).then(tracks=>{setTs(tracks.map(t=>Object.assign({},t,{coverUrl:t.coverUrl?t.coverUrl.replace(/\d+x\d+bb/g,"600x600bb"):"/placeholder.svg"})));setLoad(false);}).catch(()=>setLoad(false));
 },[]);
 const fetchMore=y.useCallback(async()=>{
 if(loadingMore)return;
