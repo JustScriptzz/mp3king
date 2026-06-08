@@ -59,6 +59,8 @@
       // Catch unhandled promise rejections too
       window.addEventListener('unhandledrejection', function(e) {
         if (window.location.pathname === '/error') return;
+        // Ignore AbortError from play() being interrupted by pause() during track switches
+        if (e.reason && (e.reason.name === 'AbortError' || String(e.reason).includes('play() request was interrupted'))) return;
         clearTimeout(_loadTimeout);
         goError('Unhandled error', e.reason ? String(e.reason) : 'Promise rejected');
       });
