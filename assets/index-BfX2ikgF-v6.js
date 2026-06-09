@@ -555,7 +555,7 @@ const[vids,setVids]=y.useState({});
 const sRef=y.useRef(null);
 const lastTapRef=y.useRef({id:null,time:0});
 const[barPct,setBarPct]=y.useState(0);
-y.useEffect(()=>{const iv=setInterval(()=>{const a=window._mp3Au;if(!a){setBarPct(0);return;}const dur=a.duration;const ct=a.currentTime;if(isFinite(dur)&&dur>0){setBarPct(Math.min(ct/dur*100,100));}else if(ct>0){setBarPct((ct%180)/180*100);}else{setBarPct(0);}},300);return()=>clearInterval(iv);},[]);
+y.useEffect(()=>{if(sDuration>0){setBarPct(Math.min(sProgress/sDuration*100,100));}else{setBarPct(0);}},[sProgress,sDuration]);
 const[page,setPage]=y.useState(0);
 const[loadingMore,setLoadingMore]=y.useState(false);
 const[likes,setLikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_likes")||"[]"))}catch{return new Set()}});
