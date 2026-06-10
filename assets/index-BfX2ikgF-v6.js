@@ -555,12 +555,12 @@ const[vids,setVids]=y.useState({});
 const sRef=y.useRef(null);
 const lastTapRef=y.useRef({id:null,time:0});
 const[barPct,setBarPct]=y.useState(0);
-y.useEffect(()=>{if(sDuration>0){setBarPct(Math.min(sProgress/sDuration*100,100));}else{setBarPct(0);}},[sProgress,sDuration]);
 const[page,setPage]=y.useState(0);
 const[loadingMore,setLoadingMore]=y.useState(false);
 const[likes,setLikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_likes")||"[]"))}catch{return new Set()}});
 const[dislikes,setDislikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_dislikes")||"[]"))}catch{return new Set()}});
 const{playTrack:playT,toggleLike,isLiked,isPlaying:sIsPlaying,progress:sProgress,duration:sDuration,togglePlay:sTogglePlay,currentTrack:sCurrent}=un();
+y.useEffect(()=>{if(sDuration>0){setBarPct(Math.min(sProgress/sDuration*100,100));}else{setBarPct(0);}},[sProgress,sDuration]);
 const getWeights=()=>{try{return JSON.parse(localStorage.getItem("mp3king_shorties_weights")||"{}")}catch{return{}}};
 const saveWeights=w=>{localStorage.setItem("mp3king_shorties_weights",JSON.stringify(w))};
 const getAlgoQuery=()=>{
