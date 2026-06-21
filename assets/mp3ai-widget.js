@@ -9,50 +9,24 @@
   const AI_NAME = "MP3 AI";
 
   const IMG_TRIGGER_RE =
-    /\b(genera|crea|disegna|fammi|fai)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina)\b|\bimmagine di\b|\bdisegna(mi)?\b/i;
+    /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
 
   /* ============== STYLES ============== */
   const style = document.createElement("style");
   style.textContent = `
-  #mp3ai-fab, #mp3ai-anchor-btn {
+  #mp3ai-anchor-btn {
     font-family: inherit;
     cursor: pointer;
     border: none;
     outline: none;
   }
-  #mp3ai-fab {
-    position: fixed;
-    right: 18px;
-    bottom: 88px;
-    z-index: 99998;
-    background: #0a0a0a;
-    color: #facc15;
-    border: 1.5px solid #facc15;
-    padding: 11px 16px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.3px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.5), 0 4px 14px rgba(0,0,0,.4);
-    animation: mp3ai-pulse 2.6s infinite;
-    transition: transform .15s ease;
-  }
-  #mp3ai-fab:active { transform: scale(0.94); }
-  @keyframes mp3ai-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(250,204,21,.45), 0 4px 14px rgba(0,0,0,.4); }
-    70% { box-shadow: 0 0 0 10px rgba(250,204,21,0), 0 4px 14px rgba(0,0,0,.4); }
-    100% { box-shadow: 0 0 0 0 rgba(250,204,21,0), 0 4px 14px rgba(0,0,0,.4); }
-  }
   #mp3ai-anchor-btn {
     width: 100%;
     margin-top: 18px;
-    background: #0a0a0a;
+    background: linear-gradient(180deg, #111 0%, #050505 100%);
     color: #facc15;
     border: 1.5px solid #facc15;
-    padding: 12px 16px;
+    padding: 13px 16px;
     border-radius: 14px;
     font-weight: 700;
     font-size: 13.5px;
@@ -60,101 +34,103 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: background .15s ease, transform .1s ease;
+    transition: background .15s ease, transform .1s ease, box-shadow .2s ease;
+    box-shadow: 0 0 0 0 rgba(250,204,21,.35);
   }
-  #mp3ai-anchor-btn:hover { background: #1a1a1a; }
+  #mp3ai-anchor-btn:hover { background: #1a1a1a; box-shadow: 0 0 14px rgba(250,204,21,.25); }
   #mp3ai-anchor-btn:active { transform: scale(0.98); }
   .mp3ai-spark { width: 16px; height: 16px; flex-shrink: 0; animation: mp3ai-spin 3.5s linear infinite; }
   @keyframes mp3ai-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
 
   #mp3ai-overlay {
     position: fixed; inset: 0; z-index: 999999;
-    background: #050505;
+    background: radial-gradient(circle at 50% 0%, #161200 0%, #050505 55%);
     display: flex; flex-direction: column;
     opacity: 0; pointer-events: none;
-    transition: opacity .22s ease;
+    transform: translateY(14px);
+    transition: opacity .25s ease, transform .25s ease;
     font-family: inherit;
   }
-  #mp3ai-overlay.mp3ai-open { opacity: 1; pointer-events: auto; }
+  #mp3ai-overlay.mp3ai-open { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
   #mp3ai-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-bottom: 1px solid #1c1c1c;
     flex-shrink: 0;
+    backdrop-filter: blur(6px);
   }
+  #mp3ai-header .mp3ai-title-wrap { display: flex; flex-direction: column; gap: 2px; }
   #mp3ai-header .mp3ai-title {
-    color: #facc15; font-weight: 800; font-size: 16px; letter-spacing: .3px;
+    color: #facc15; font-weight: 800; font-size: 17px; letter-spacing: .3px;
     display: flex; align-items: center; gap: 8px;
+    text-shadow: 0 0 18px rgba(250,204,21,.35);
+  }
+  #mp3ai-header .mp3ai-subtitle {
+    color: #6b6b6b; font-size: 11px; font-weight: 500; margin-left: 24px;
   }
   .mp3ai-icon-btn {
     background: transparent; border: none; color: #e5e5e5;
     width: 36px; height: 36px; border-radius: 999px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    cursor: pointer; transition: background .15s ease;
   }
   .mp3ai-icon-btn:active { background: #1a1a1a; }
 
   #mp3ai-body {
-    flex: 1; overflow-y: auto; padding: 16px;
+    flex: 1; overflow-y: auto; padding: 18px 16px;
     display: flex; flex-direction: column; gap: 14px;
   }
 
   #mp3ai-empty {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 18px; text-align: center; padding: 0 24px;
+    gap: 20px; text-align: center; padding: 0 24px;
   }
 
+  /* ---- voxel mascot: built from many tiny cubes, not one block ---- */
   .mp3ai-mascot {
-    width: 84px; height: 84px; position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, 12px);
+    grid-template-rows: repeat(7, 12px);
+    gap: 2px;
     animation: mp3ai-bob 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 10px 16px rgba(250,204,21,.18));
   }
-  @keyframes mp3ai-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  .mp3ai-mascot-body {
-    width: 100%; height: 100%;
-    background: linear-gradient(150deg, #facc15, #eab308);
-    border-radius: 22px;
-    border: 3px solid #0a0a0a;
-    position: relative;
-    box-shadow: inset 0 -6px 0 rgba(0,0,0,.15), 0 8px 18px rgba(250,204,21,.18);
+  @keyframes mp3ai-bob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-7px) rotate(-1.5deg); } }
+  .mp3ai-cube {
+    width: 12px; height: 12px; border-radius: 3px;
+    background: linear-gradient(155deg, #fde047 0%, #facc15 45%, #d4a309 100%);
+    box-shadow: inset -2px -2px 0 rgba(0,0,0,.22), inset 2px 2px 0 rgba(255,255,255,.25);
   }
-  .mp3ai-eye {
-    position: absolute; top: 32px; width: 12px; height: 12px;
-    background: #0a0a0a; border-radius: 50%;
-    animation: mp3ai-blink 4.2s infinite;
+  .mp3ai-cube.dark {
+    background: linear-gradient(155deg, #2b2b2b 0%, #0a0a0a 100%);
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,.08);
+    animation: mp3ai-blink 4.5s infinite;
   }
-  .mp3ai-eye.l { left: 22px; }
-  .mp3ai-eye.r { right: 22px; }
-  @keyframes mp3ai-blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
-  .mp3ai-mouth {
-    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
-    width: 22px; height: 10px; border-radius: 0 0 10px 10px;
-    border: 3px solid #0a0a0a; border-top: none;
-  }
-  .mp3ai-note {
-    position: absolute; top: -14px; right: -6px; font-size: 18px;
-    animation: mp3ai-float 2.4s ease-in-out infinite;
-  }
-  @keyframes mp3ai-float { 0%,100% { transform: translateY(0) rotate(-8deg); opacity: .85; } 50% { transform: translateY(-6px) rotate(8deg); opacity: 1; } }
+  .mp3ai-cube.empty { background: transparent; box-shadow: none; }
+  @keyframes mp3ai-blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.15); } }
 
   #mp3ai-empty h2 {
-    color: #f5f5f5; font-size: 21px; font-weight: 700; margin: 0;
+    color: #f5f5f5; font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.2px;
   }
-  #mp3ai-empty p { color: #8a8a8a; font-size: 13px; margin: 0; max-width: 280px; }
+  #mp3ai-empty p { color: #8a8a8a; font-size: 13px; margin: 0; max-width: 280px; line-height: 1.5; }
 
-  .mp3ai-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+  .mp3ai-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
   .mp3ai-chip {
-    background: #131313; border: 1px solid #2a2a2a; color: #d4d4d4;
-    font-size: 12px; padding: 8px 12px; border-radius: 999px; cursor: pointer;
+    background: #131313; border: 1px solid #2a2a2a; color: #e0e0e0;
+    font-size: 12px; padding: 9px 14px; border-radius: 999px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: border-color .15s ease, transform .1s ease;
   }
-  .mp3ai-chip:active { background: #1d1d1d; }
+  .mp3ai-chip:hover { border-color: #facc15; }
+  .mp3ai-chip:active { transform: scale(0.96); }
 
   .mp3ai-msg {
     max-width: 84%;
-    padding: 11px 14px;
-    border-radius: 16px;
-    font-size: 14px;
-    line-height: 1.45;
+    padding: 12px 15px;
+    border-radius: 18px;
+    font-size: 14.5px;
+    line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
     animation: mp3ai-rise .22s ease;
@@ -162,7 +138,8 @@
   @keyframes mp3ai-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   .mp3ai-msg.user {
     align-self: flex-end;
-    background: #facc15; color: #0a0a0a; font-weight: 500;
+    background: linear-gradient(135deg, #fde047, #facc15);
+    color: #0a0a0a; font-weight: 500;
     border-bottom-right-radius: 4px;
   }
   .mp3ai-msg.assistant {
@@ -171,7 +148,7 @@
     border-bottom-left-radius: 4px;
   }
   .mp3ai-msg img {
-    max-width: 100%; border-radius: 12px; margin-top: 8px; display: block;
+    max-width: 100%; border-radius: 14px; margin-top: 10px; display: block;
     border: 1px solid #2a2a2a;
   }
   .mp3ai-typing { display: flex; gap: 4px; padding: 4px 2px; }
@@ -185,27 +162,31 @@
 
   #mp3ai-inputbar {
     flex-shrink: 0;
-    display: flex; align-items: flex-end; gap: 8px;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid #1c1c1c;
     background: #050505;
   }
   #mp3ai-input {
     flex: 1; resize: none; max-height: 110px;
-    background: #131313; border: 1px solid #262626; color: #f5f5f5;
-    border-radius: 18px; padding: 11px 14px; font-size: 14px; font-family: inherit;
-    outline: none;
+    background: #131313; border: 1.5px solid #262626; color: #f5f5f5;
+    border-radius: 20px; padding: 12px 16px; font-size: 14.5px; font-family: inherit;
+    outline: none; transition: border-color .15s ease, box-shadow .15s ease;
   }
-  #mp3ai-input:focus { border-color: #facc15; }
+  #mp3ai-input:focus { border-color: #facc15; box-shadow: 0 0 0 3px rgba(250,204,21,.12); }
   #mp3ai-send {
-    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-    background: #facc15; color: #0a0a0a; border: none;
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #fde047, #facc15); color: #0a0a0a; border: none;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform .1s ease;
   }
+  #mp3ai-send:active { transform: scale(0.92); }
   #mp3ai-send:disabled { opacity: .4; }
   #mp3ai-clear {
     color: #6b6b6b; font-size: 11.5px; background: none; border: none; cursor: pointer;
+    transition: color .15s ease;
   }
+  #mp3ai-clear:hover { color: #facc15; }
   `;
   document.head.appendChild(style);
 
@@ -233,7 +214,7 @@
     } catch {}
   }
 
-  /* ============== CONTEXT GATHERING (full access ai dati utente) ============== */
+  /* ============== CONTEXT GATHERING (full access to user data) ============== */
   function buildUserContext() {
     const liked = readJSON("mp3king_liked_tracks", []);
     const stats = readJSON("mp3king_listening_stats", {});
@@ -302,7 +283,7 @@ ${buildUserContext()}`;
         data.choices[0] &&
         data.choices[0].message &&
         data.choices[0].message.content) ||
-      "Mmh non mi è venuto in mente niente, riprova."
+      "Hmm, nothing came to mind, try again."
     );
   }
 
@@ -316,22 +297,25 @@ ${buildUserContext()}`;
   }
 
   /* ============== UI BUILD ============== */
-  let overlay, bodyEl, inputEl, sendBtn, emptyEl;
+  let overlay, bodyEl, inputEl, sendBtn;
 
   function createOverlay() {
     overlay = document.createElement("div");
     overlay.id = "mp3ai-overlay";
     overlay.innerHTML = `
       <div id="mp3ai-header">
-        <div class="mp3ai-title">${svgSpark}${AI_NAME}</div>
+        <div class="mp3ai-title-wrap">
+          <div class="mp3ai-title">${svgSpark}${AI_NAME}</div>
+          <div class="mp3ai-subtitle">Powered by free AI</div>
+        </div>
         <div style="display:flex;gap:4px;align-items:center;">
-          <button id="mp3ai-clear" type="button">Cancella chat</button>
+          <button id="mp3ai-clear" type="button">Clear chat</button>
           <button class="mp3ai-icon-btn" id="mp3ai-close" type="button">${svgClose}</button>
         </div>
       </div>
       <div id="mp3ai-body"></div>
       <div id="mp3ai-inputbar">
-        <textarea id="mp3ai-input" rows="1" placeholder="Scrivi qualcosa..."></textarea>
+        <textarea id="mp3ai-input" rows="1" placeholder="Ask anything..."></textarea>
         <button id="mp3ai-send" type="button">${svgSend}</button>
       </div>
     `;
@@ -358,16 +342,27 @@ ${buildUserContext()}`;
     });
   }
 
+  /* Voxel mascot: a little character built from many small cubes (not a single block) */
+  const MASCOT_PATTERN = [
+    ".XXXXX.",
+    "XXXXXXX",
+    "XXXXXXX",
+    "XXOXOXX",
+    "XXXXXXX",
+    "XOOOOOX",
+    ".XXXXX.",
+  ];
+
   function mascotHTML() {
-    return `
-      <div class="mp3ai-mascot">
-        <div class="mp3ai-mascot-body">
-          <div class="mp3ai-eye l"></div>
-          <div class="mp3ai-eye r"></div>
-          <div class="mp3ai-mouth"></div>
-        </div>
-        <div class="mp3ai-note">&#9835;</div>
-      </div>`;
+    let cells = "";
+    for (const row of MASCOT_PATTERN) {
+      for (const ch of row) {
+        if (ch === ".") cells += `<div class="mp3ai-cube empty"></div>`;
+        else if (ch === "O") cells += `<div class="mp3ai-cube dark"></div>`;
+        else cells += `<div class="mp3ai-cube"></div>`;
+      }
+    }
+    return `<div class="mp3ai-mascot">${cells}</div>`;
   }
 
   function renderEmptyState() {
@@ -376,11 +371,11 @@ ${buildUserContext()}`;
     wrap.innerHTML = `
       ${mascotHTML()}
       <h2>What's on your mind today?</h2>
-      <p>Chiedimi consigli sui tuoi gusti musicali, fammi generare un'immagine o chiacchieriamo e basta.</p>
+      <p>Ask me for music recommendations, get me to generate an image, or just chat.</p>
       <div class="mp3ai-suggestions">
-        <button class="mp3ai-chip" data-q="Basandoti sui miei ascolti, cosa mi consigli?">Consigliami qualcosa</button>
-        <button class="mp3ai-chip" data-q="Fammi un riassunto dei miei gusti musicali">I miei gusti</button>
-        <button class="mp3ai-chip" data-q="Genera un'immagine ispirata a quello che sto ascoltando">Genera immagine</button>
+        <button class="mp3ai-chip" data-q="Based on what I listen to, what do you recommend?">Recommend something</button>
+        <button class="mp3ai-chip" data-q="Give me a summary of my music taste">My taste</button>
+        <button class="mp3ai-chip" data-q="Generate an image inspired by what I'm listening to">Generate image</button>
       </div>
     `;
     wrap.querySelectorAll(".mp3ai-chip").forEach((chip) => {
@@ -401,7 +396,7 @@ ${buildUserContext()}`;
     if (imageUrl) {
       const img = document.createElement("img");
       img.src = imageUrl;
-      img.alt = "Immagine generata";
+      img.alt = "Generated image";
       div.appendChild(img);
     }
     bodyEl.appendChild(div);
@@ -453,7 +448,6 @@ ${buildUserContext()}`;
       let imageUrl = null;
       if (wantsImage) {
         imageUrl = pollinationsImageUrl(text);
-        // preload so it's ready when shown
         await new Promise((resolve) => {
           const img = new Image();
           img.onload = resolve;
@@ -469,7 +463,7 @@ ${buildUserContext()}`;
       addMessageBubble("assistant", reply, imageUrl);
     } catch (err) {
       hideTyping();
-      const msg = "Mi sa che il modello gratuito sta avendo un momento no, riprova tra un attimo.";
+      const msg = "The free model seems to be having a moment, try again in a bit.";
       const newHistory = loadHistory();
       newHistory.push({ role: "assistant", content: msg });
       saveHistory(newHistory);
@@ -490,19 +484,9 @@ ${buildUserContext()}`;
     if (overlay) overlay.classList.remove("mp3ai-open");
   }
 
-  /* ============== ENTRY BUTTON(S) ============== */
+  /* ============== ENTRY BUTTON (queue panel only) ============== */
   function makeButtonInner() {
     return `${svgSpark}<span>${AI_NAME}</span>`;
-  }
-
-  function ensureFab() {
-    if (document.getElementById("mp3ai-fab")) return;
-    const btn = document.createElement("button");
-    btn.id = "mp3ai-fab";
-    btn.type = "button";
-    btn.innerHTML = makeButtonInner();
-    btn.addEventListener("click", openOverlay);
-    document.body.appendChild(btn);
   }
 
   function tryMountAnchorButton() {
@@ -526,7 +510,6 @@ ${buildUserContext()}`;
   }
 
   function init() {
-    ensureFab();
     if (!tryMountAnchorButton()) {
       const observer = new MutationObserver(() => {
         tryMountAnchorButton();
