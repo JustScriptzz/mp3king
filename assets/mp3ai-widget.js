@@ -467,7 +467,7 @@ ${buildUserContext()}`;
             <button class="mp3ai-icon-btn" id="mp3ai-menu" type="button">${svgMenu}</button>
             <div class="mp3ai-title-wrap">
               <div class="mp3ai-title">${svgSpark}${AI_NAME}</div>
-              <div class="mp3ai-subtitle">Powered by free AI</div>
+              <div class="mp3ai-subtitle">Powered by Open AI</div>
             </div>
           </div>
           <button class="mp3ai-icon-btn" id="mp3ai-close" type="button">${svgClose}</button>
