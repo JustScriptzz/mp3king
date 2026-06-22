@@ -97,7 +97,7 @@
   #mp3ai-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 0 24px; }
 
   .mp3ai-mascot {
-    display: grid; grid-template-columns: repeat(7, 12px); grid-template-rows: repeat(8, 12px); gap: 2px;
+    display: grid; grid-template-columns: repeat(11, 11px); grid-template-rows: repeat(9, 11px); gap: 2px;
     animation: mp3ai-bob 2.4s ease-in-out infinite;
     filter: drop-shadow(0 10px 16px rgba(250,204,21,.18));
   }
@@ -108,9 +108,21 @@
     box-shadow: inset -2px -2px 0 rgba(0,0,0,.22), inset 2px 2px 0 rgba(255,255,255,.25);
   }
   .mp3ai-cube.dark {
-    background: linear-gradient(155deg, #2b2b2b 0%, #0a0a0a 100%);
-    box-shadow: inset -1px -1px 0 rgba(255,255,255,.08);
+    background: #050505;
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,.05);
     animation: mp3ai-blink 4.5s infinite;
+  }
+  .mp3ai-cube.orange {
+    background: linear-gradient(155deg, #fb923c 0%, #f97316 45%, #ea580c 100%);
+    box-shadow: inset -2px -2px 0 rgba(0,0,0,.22), inset 2px 2px 0 rgba(255,255,255,.2);
+  }
+  .mp3ai-cube.brown {
+    background: #5c3600;
+    box-shadow: inset -1px -1px 0 rgba(0,0,0,.3);
+  }
+  .mp3ai-cube.rust {
+    background: #c2410c;
+    box-shadow: inset -1px -1px 0 rgba(255,255,255,.1);
   }
   .mp3ai-cube.empty { background: transparent; box-shadow: none; }
   @keyframes mp3ai-blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.15); } }
@@ -567,22 +579,26 @@ ${buildUserContext()}`;
 
   /* Voxel mascot */
   const MASCOT_PATTERN = [
-    "XX...XX",
-    "XXX.XXX",
-    "XXXXXXX",
-    "XXXXXXX",
-    "XOXXXOX",
-    "XXXXXXX",
-    "XOOOOOX",
-    ".XXXXX.",
+    "..OOOOOOO..",
+    "OOKKKKKKKOO",
+    "OOYYYYYYYOO",
+    "OOYYYYYYYOO",
+    "OOYKYYYKYOO",
+    "OOYRBBBRYOO",
+    "OOYYYYYYYOO",
+    "OOYYYYYYYOO",
+    "..YY.YY.YY.",
   ];
   function mascotHTML() {
     let cells = "";
     for (const row of MASCOT_PATTERN) {
       for (const ch of row) {
-        if (ch === ".") cells += `<div class="mp3ai-cube empty"></div>`;
-        else if (ch === "O") cells += `<div class="mp3ai-cube dark"></div>`;
-        else cells += `<div class="mp3ai-cube"></div>`;
+        if      (ch === ".") cells += `<div class="mp3ai-cube empty"></div>`;
+        else if (ch === "O") cells += `<div class="mp3ai-cube orange"></div>`;
+        else if (ch === "K") cells += `<div class="mp3ai-cube dark"></div>`;
+        else if (ch === "B") cells += `<div class="mp3ai-cube brown"></div>`;
+        else if (ch === "R") cells += `<div class="mp3ai-cube rust"></div>`;
+        else                 cells += `<div class="mp3ai-cube"></div>`;
       }
     }
     return `<div class="mp3ai-mascot">${cells}</div>`;
