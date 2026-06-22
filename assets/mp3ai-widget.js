@@ -97,7 +97,7 @@
   #mp3ai-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 0 24px; }
 
   .mp3ai-mascot {
-    display: grid; grid-template-columns: repeat(7, 12px); grid-template-rows: repeat(7, 12px); gap: 2px;
+    display: grid; grid-template-columns: repeat(7, 12px); grid-template-rows: repeat(8, 12px); gap: 2px;
     animation: mp3ai-bob 2.4s ease-in-out infinite;
     filter: drop-shadow(0 10px 16px rgba(250,204,21,.18));
   }
@@ -567,10 +567,11 @@ ${buildUserContext()}`;
 
   /* Voxel mascot */
   const MASCOT_PATTERN = [
-    ".XXXXX.",
+    "XX...XX",
+    "XXX.XXX",
     "XXXXXXX",
     "XXXXXXX",
-    "XXOXOXX",
+    "XOXXXOX",
     "XXXXXXX",
     "XOOOOOX",
     ".XXXXX.",
