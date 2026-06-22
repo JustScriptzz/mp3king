@@ -531,7 +531,7 @@ ${buildUserContext()}`;
     const res = await fetch(LLM_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: LLM_MODEL, messages, seed: -1, temperature: 0.8, max_tokens: 1200, stream: true }),
+      body: JSON.stringify({ model: LLM_MODEL, messages, temperature: 0.8, stream: true }),
     });
     if (!res.ok || !res.body) throw new Error("LLM error " + res.status);
     const reader = res.body.getReader();
