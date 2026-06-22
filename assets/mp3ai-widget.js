@@ -584,7 +584,7 @@ ${buildUserContext()}`;
     "OOYYYYYYYOO",
     "OOYYYYYYYOO",
     "OOYKYYYKYOO",
-    "OOYRBBBRYOO",
+    "OOYYYYYYYOO",
     "OOYYYYYYYOO",
     "OOYYYYYYYOO",
     "..YY.YY.YY.",
