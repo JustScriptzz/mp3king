@@ -531,7 +531,7 @@ ${buildUserContext()}`;
     const res = await fetch(LLM_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: LLM_MODEL, messages, seed: -1, temperature: 0.8, stream: true }),
+      body: JSON.stringify({ model: LLM_MODEL, messages, seed: -1, temperature: 0.8, max_tokens: 1200, stream: true }),
     });
     if (!res.ok || !res.body) throw new Error("LLM error " + res.status);
     const reader = res.body.getReader();
@@ -880,7 +880,7 @@ ${buildUserContext()}`;
         ...chat.messages.slice(-16).map((m) => ({ role: m.role, content: m.content })),
       ];
       let lastRendered = "";
-      const full = await streamLLM(messages, (partial) => {
+      const onToken = (partial) => {
         const display = partial.replace(ACTION_RE, "").trimEnd();
         if (display !== lastRendered) {
           lastRendered = display;
@@ -891,7 +891,20 @@ ${buildUserContext()}`;
           bubble.appendChild(caret);
           bodyEl.scrollTop = bodyEl.scrollHeight;
         }
-      });
+      };
+      let full, lastErr;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          full = await streamLLM(messages, onToken);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+          lastRendered = "";
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
+        }
+      }
+      if (lastErr) throw lastErr;
 
       let visibleText = full;
       let pendingAction = null;
@@ -915,7 +928,8 @@ ${buildUserContext()}`;
     } catch (err) {
       const s2 = loadStore();
       const c2 = getActiveChat(s2);
-      c2.messages.push({ id: uid(), role: "assistant", content: "The free model seems to be having a moment, try again in a bit." });
+      const detail = err && err.message ? err.message : "network error";
+      c2.messages.push({ id: uid(), role: "assistant", content: "The free model seems to be having a moment (" + detail + "). Try again in a bit." });
       saveStore(s2);
       renderMessages();
       console.error("Kingy error:", err);
