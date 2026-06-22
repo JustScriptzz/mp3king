@@ -562,6 +562,45 @@ ${buildUserContext()}`;
     return full;
   }
 
+  /* Fallback provider: mlvoca.com (Ollama-based, no key, different request/response shape) */
+  const FALLBACK_ENDPOINT = "https://mlvoca.com/api/generate";
+  const FALLBACK_MODEL = "deepseek-r1:1.5b";
+  async function streamLLM_fallback(messages, onToken) {
+    const sys = messages.find((m) => m.role === "system");
+    const turns = messages.filter((m) => m.role !== "system");
+    const prompt =
+      turns.map((m) => (m.role === "user" ? "User: " : "Assistant: ") + m.content).join("\n\n") + "\n\nAssistant:";
+    const res = await fetch(FALLBACK_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: FALLBACK_MODEL, system: sys ? sys.content : undefined, prompt, stream: true }),
+    });
+    if (!res.ok || !res.body) throw new Error("Fallback LLM error " + res.status);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let full = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) continue;
+        try {
+          const json = JSON.parse(t);
+          if (json.response) {
+            full += json.response;
+            onToken(full.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/<think>[\s\S]*$/, "").trim());
+          }
+        } catch {}
+      }
+    }
+    return full.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  }
+
   function pollinationsImageUrl(prompt) {
     const seedRand = Math.floor(Math.random() * 1e9);
     return (
@@ -902,6 +941,15 @@ ${buildUserContext()}`;
           lastErr = e;
           lastRendered = "";
           if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
+        }
+      }
+      if (lastErr) {
+        lastRendered = "";
+        try {
+          full = await streamLLM_fallback(messages, onToken);
+          lastErr = null;
+        } catch (e2) {
+          lastErr = e2;
         }
       }
       if (lastErr) throw lastErr;
