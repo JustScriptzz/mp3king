@@ -3,11 +3,23 @@
 
   /* ============== CONFIG ============== */
   const STORE_KEY = "mp3king_ai_chat";
+  const PREFS_KEY = "mp3king_ai_prefs";
+  const MEMORY_KEY = "mp3king_ai_memory";
   const LLM_ENDPOINT = "https://api.llm7.io/v1/chat/completions";
   const LLM_MODEL = "gpt-4o-mini-2024-07-18";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const AI_NAME = "Kingy";
+  const AI_DISPLAY_NAME = "Kingy AI";
   const ROUTE = "/chat";
+
+  const LANGUAGES = [
+    { code: "auto", label: "Auto-detect" },
+    { code: "en", label: "English" },
+    { code: "it", label: "Italiano" },
+    { code: "es", label: "Español" },
+    { code: "fr", label: "Français" },
+    { code: "de", label: "Deutsch" },
+  ];
 
   const IMG_TRIGGER_RE =
     /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -41,7 +53,7 @@
     font-family: inherit;
   }
   #mp3ai-overlay.mp3ai-open { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  #mp3ai-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #mp3ai-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
 
   /* ---- sidebar (hamburger menu) ---- */
   #mp3ai-sidebar {
@@ -211,6 +223,37 @@
   @media (max-width: 640px) {
     #mp3ai-sidebar { width: 78vw; }
   }
+
+  /* ---- onboarding ---- */
+  #mp3ai-onboard {
+    position: absolute; inset: 0; z-index: 5; background: #050505;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 32px 24px; text-align: center;
+  }
+  #mp3ai-onboard h2 { color: #f5f5f5; font-size: 21px; font-weight: 800; margin: 0; }
+  #mp3ai-onboard p { color: #8a8a8a; font-size: 13px; margin: 0; max-width: 300px; line-height: 1.5; }
+  .mp3ai-onboard-block { width: 100%; max-width: 320px; text-align: left; }
+  .mp3ai-onboard-label { color: #e5e5e5; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px; }
+  .mp3ai-lang-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mp3ai-lang-chip {
+    background: #131313; border: 1.5px solid #2a2a2a; color: #d4d4d4;
+    font-size: 12.5px; padding: 8px 13px; border-radius: 999px; cursor: pointer;
+  }
+  .mp3ai-lang-chip.active { border-color: #facc15; color: #facc15; background: #1a1605; }
+  .mp3ai-mem-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: #131313; border: 1.5px solid #2a2a2a; border-radius: 14px; padding: 12px 14px;
+  }
+  .mp3ai-mem-row .mp3ai-mem-text { font-size: 12.5px; color: #d4d4d4; line-height: 1.4; }
+  .mp3ai-mem-text strong { color: #f5f5f5; }
+  .mp3ai-switch { width: 42px; height: 24px; border-radius: 999px; background: #2a2a2a; position: relative; cursor: pointer; flex-shrink: 0; transition: background .15s ease; }
+  .mp3ai-switch.on { background: #facc15; }
+  .mp3ai-switch .mp3ai-switch-dot { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s ease; }
+  .mp3ai-switch.on .mp3ai-switch-dot { transform: translateX(18px); background: #0a0a0a; }
+  #mp3ai-onboard-continue {
+    width: 100%; max-width: 320px; background: #facc15; color: #0a0a0a; border: none; font-weight: 700;
+    padding: 13px; border-radius: 12px; cursor: pointer; font-size: 14px;
+  }
   `;
   document.head.appendChild(style);
 
@@ -261,6 +304,67 @@
     return t.length === text.trim().length ? t : t + "...";
   }
 
+  /* ============== PREFS (language + memory toggle) ============== */
+  function loadPrefs() {
+    return readJSON(PREFS_KEY, { onboarded: false, language: "auto", memoryEnabled: true });
+  }
+  function savePrefs(p) {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+    } catch {}
+  }
+  function loadMemory() {
+    try {
+      return localStorage.getItem(MEMORY_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+  function saveMemory(text) {
+    try {
+      localStorage.setItem(MEMORY_KEY, text.slice(-1500));
+    } catch {}
+  }
+  function languageName(code) {
+    const f = LANGUAGES.find((l) => l.code === code);
+    return f ? f.label : "Auto-detect";
+  }
+
+  async function maybeUpdateMemory(chat) {
+    const prefs = loadPrefs();
+    if (!prefs.memoryEnabled || !chat || !chat.messages || chat.messages.length < 2) return;
+    try {
+      const convoText = chat.messages
+        .slice(-12)
+        .map((m) => (m.role === "user" ? "User: " : "Assistant: ") + m.content)
+        .join("\n");
+      const res = await fetch(LLM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: LLM_MODEL,
+          stream: false,
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You write extremely short memory notes (max 200 characters) about a user's music taste or relevant facts, based on a conversation, for a music app assistant to recall in future chats. Output only the note itself, no preamble, no quotes. If there's nothing worth remembering, output exactly: NONE",
+            },
+            { role: "user", content: convoText },
+          ],
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const note = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (note && note.trim() && note.trim().toUpperCase() !== "NONE") {
+        const existing = loadMemory();
+        saveMemory((existing ? existing + "\n" : "") + "- " + note.trim());
+      }
+    } catch {}
+  }
+
   /* ============== CONTEXT (full access to user data) ============== */
   function buildUserContext() {
     const liked = readJSON("mp3king_liked_tracks", []);
@@ -283,34 +387,42 @@
       : "";
 
     return [
-      `Nome utente/profilo: ${profile && profile.name ? profile.name : "non impostato"}.`,
-      `In riproduzione ora: ${nowPlaying}.`,
-      `Statistiche ascolto: ${stats && stats.totalTracks ? stats.totalTracks : 0} tracce totali, ${
+      `User profile name: ${profile && profile.name ? profile.name : "not set"}.`,
+      `Currently playing: ${nowPlaying}.`,
+      `Listening stats: ${stats && stats.totalTracks ? stats.totalTracks : 0} total tracks, ${
         stats && stats.totalSeconds ? Math.round(stats.totalSeconds / 60) : 0
-      } minuti totali, ${stats && stats.sessionsCount ? stats.sessionsCount : 0} sessioni.`,
-      `Canzoni che piacciono all'utente (le più recenti): ${likedList || "nessuna ancora"}.`,
-      `Playlist locali dell'utente: ${playlistSummary || "nessuna"}.`,
-      `Podcast seguiti: ${Array.isArray(subs) ? subs.length : 0}.`,
+      } total minutes, ${stats && stats.sessionsCount ? stats.sessionsCount : 0} sessions.`,
+      `User's liked songs (most recent): ${likedList || "none yet"}.`,
+      `User's local playlists: ${playlistSummary || "none"}.`,
+      `Followed podcasts: ${Array.isArray(subs) ? subs.length : 0}.`,
     ].join("\n");
   }
 
   function systemPrompt() {
-    return `Sei ${AI_NAME}, l'assistente musicale integrato dentro l'app mp3king. Il tuo nome è "${AI_NAME}" e te lo ricordi sempre. Hai accesso completo ai dati di ascolto dell'utente e li usi in modo naturale per consigli personalizzati. Rispondi sempre in italiano a meno che l'utente scriva in un'altra lingua, in modo amichevole, conciso e diretto.
+    const prefs = loadPrefs();
+    const langInstruction =
+      prefs.language && prefs.language !== "auto"
+        ? `Always respond in ${languageName(prefs.language)}, regardless of what language the user writes in.`
+        : `Respond in the same language the user is writing in.`;
+    const memory = prefs.memoryEnabled ? loadMemory() : "";
+    const memoryBlock = memory ? `\n\nLong-term memory notes from previous conversations with this user:\n${memory}` : "";
 
-Puoi anche AGIRE davvero sull'app (creare playlist, aggiungere/rimuovere canzoni dalla coda o da una playlist, mettere like). L'utente deve sempre approvare prima che l'azione venga eseguita: tu proponi l'azione, l'app mostra una card di conferma. Per proporre un'azione, scrivi alla fine della tua risposta (dopo aver spiegato brevemente cosa stai per fare) un blocco esatto in questo formato, su una riga sola, con JSON valido:
-[[ACTION]]{"action":"<tipo>", ...campi}[[/ACTION]]
+    return `You are ${AI_NAME}, the music assistant built into the mp3king app. Your name is "${AI_NAME}" and you always remember it. You have full access to the user's listening data and use it naturally for personalized recommendations. ${langInstruction} Be friendly, concise, and direct, never robotic.
 
-Tipi di azione disponibili:
-- add_to_queue: {"action":"add_to_queue","query":"titolo canzone artista"}
-- play_now: {"action":"play_now","query":"titolo canzone artista"}
-- remove_from_queue: {"action":"remove_from_queue","query":"titolo canzone da cercare nella coda attuale"}
-- like_track: {"action":"like_track","query":"titolo canzone artista"}
-- create_playlist: {"action":"create_playlist","name":"Nome playlist","tracks":["titolo1 artista1","titolo2 artista2"]}  (tracks è opzionale)
-- add_to_playlist: {"action":"add_to_playlist","playlistName":"Nome playlist esistente","query":"titolo canzone artista"}
+You can also genuinely ACT on the app (create playlists, add/remove songs from the queue or a playlist, like tracks). The user must always approve before an action runs: you propose the action, the app shows a confirmation card. To propose an action, write it at the end of your reply (after briefly explaining what you're about to do) as an exact block in this format, on a single line, with valid JSON:
+[[ACTION]]{"action":"<type>", ...fields}[[/ACTION]]
 
-Usa al massimo UN blocco [[ACTION]] per risposta. Se l'utente non ha chiesto di fare qualcosa di concreto sull'app, non includere nessun blocco ACTION, parla e basta.
+Available action types:
+- add_to_queue: {"action":"add_to_queue","query":"song title artist"}
+- play_now: {"action":"play_now","query":"song title artist"}
+- remove_from_queue: {"action":"remove_from_queue","query":"song title to search in the current queue"}
+- like_track: {"action":"like_track","query":"song title artist"}
+- create_playlist: {"action":"create_playlist","name":"Playlist name","tracks":["title1 artist1","title2 artist2"]}  (tracks is optional)
+- add_to_playlist: {"action":"add_to_playlist","playlistName":"Existing playlist name","query":"song title artist"}
 
-Dati utente attuali:
+Use at most ONE [[ACTION]] block per reply. If the user hasn't asked for something concrete on the app, don't include any ACTION block, just talk.${memoryBlock}
+
+Current user data:
 ${buildUserContext()}`;
   }
 
@@ -478,7 +590,7 @@ ${buildUserContext()}`;
           <div class="mp3ai-left">
             <button class="mp3ai-icon-btn" id="mp3ai-menu" type="button">${svgMenu}</button>
             <div class="mp3ai-title-wrap">
-              <div class="mp3ai-title">${svgSpark}${AI_NAME}</div>
+              <div class="mp3ai-title">${svgSpark}${AI_DISPLAY_NAME}</div>
               <div class="mp3ai-subtitle">Powered by Open AI</div>
             </div>
           </div>
@@ -504,6 +616,8 @@ ${buildUserContext()}`;
     backdropEl.addEventListener("click", closeSidebar);
     overlay.querySelector("#mp3ai-new-chat").addEventListener("click", () => {
       const store = loadStore();
+      const prevChat = getActiveChat(store);
+      maybeUpdateMemory(prevChat);
       const id = uid();
       store.chats[id] = { id, title: "New chat", messages: [], updatedAt: Date.now() };
       store.activeId = id;
@@ -546,6 +660,7 @@ ${buildUserContext()}`;
       item.addEventListener("click", (e) => {
         if (e.target.closest(".mp3ai-chat-del")) return;
         const s = loadStore();
+        if (s.activeId !== c.id) maybeUpdateMemory(getActiveChat(s));
         s.activeId = c.id;
         saveStore(s);
         renderSidebar();
@@ -830,11 +945,69 @@ ${buildUserContext()}`;
     await runAssistantTurn(text);
   }
 
+  function renderOnboarding(onDone) {
+    const prefs = loadPrefs();
+    let selectedLang = prefs.language || "auto";
+    let memOn = prefs.memoryEnabled !== false;
+
+    const wrap = document.createElement("div");
+    wrap.id = "mp3ai-onboard";
+    wrap.innerHTML = `
+      ${mascotHTML()}
+      <h2>Hey, I'm ${AI_DISPLAY_NAME}!</h2>
+      <p>Quick setup before we start chatting. You can change this anytime from Settings.</p>
+      <div class="mp3ai-onboard-block">
+        <div class="mp3ai-onboard-label">Language</div>
+        <div class="mp3ai-lang-grid" id="mp3ai-lang-grid">
+          ${LANGUAGES.map((l) => `<button type="button" class="mp3ai-lang-chip${l.code === selectedLang ? " active" : ""}" data-code="${l.code}">${l.label}</button>`).join("")}
+        </div>
+      </div>
+      <div class="mp3ai-onboard-block">
+        <div class="mp3ai-mem-row">
+          <div class="mp3ai-mem-text"><strong>Remember me</strong><br>Keep light notes between chats for better recommendations.</div>
+          <div class="mp3ai-switch${memOn ? " on" : ""}" id="mp3ai-mem-switch"><div class="mp3ai-switch-dot"></div></div>
+        </div>
+      </div>
+      <button type="button" id="mp3ai-onboard-continue">Let's go</button>
+    `;
+    wrap.querySelectorAll(".mp3ai-lang-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        selectedLang = chip.dataset.code;
+        wrap.querySelectorAll(".mp3ai-lang-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+      });
+    });
+    const memSwitch = wrap.querySelector("#mp3ai-mem-switch");
+    memSwitch.addEventListener("click", () => {
+      memOn = !memOn;
+      memSwitch.classList.toggle("on", memOn);
+    });
+    wrap.querySelector("#mp3ai-onboard-continue").addEventListener("click", () => {
+      savePrefs({ onboarded: true, language: selectedLang, memoryEnabled: memOn });
+      wrap.remove();
+      onDone();
+    });
+    return wrap;
+  }
+
   /* ============== OPEN/CLOSE + soft /chat route ============== */
   function openOverlay(pushUrl) {
     if (!overlay) createOverlay();
-    renderSidebar();
-    renderMessages();
+    const prefs = loadPrefs();
+    if (!prefs.onboarded) {
+      const mainEl = overlay.querySelector("#mp3ai-main");
+      if (!mainEl.querySelector("#mp3ai-onboard")) {
+        mainEl.appendChild(
+          renderOnboarding(() => {
+            renderSidebar();
+            renderMessages();
+          })
+        );
+      }
+    } else {
+      renderSidebar();
+      renderMessages();
+    }
     overlay.classList.add("mp3ai-open");
     if (pushUrl !== false && location.pathname !== ROUTE) {
       prevPath = location.pathname + location.search;
@@ -860,7 +1033,7 @@ ${buildUserContext()}`;
 
   /* ============== ENTRY BUTTON (queue panel) ============== */
   function makeButtonInner() {
-    return `${svgSpark}<span>${AI_NAME}</span>`;
+    return `${svgSpark}<span>${AI_DISPLAY_NAME}</span>`;
   }
   function tryMountAnchorButton() {
     if (document.getElementById("mp3ai-anchor-btn")) return true;
