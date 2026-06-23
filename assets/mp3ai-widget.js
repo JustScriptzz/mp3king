@@ -402,7 +402,7 @@
     overlay.querySelector("#mp3ai-new-chat").addEventListener("click", () => {
       const s=loadStore(), id=uid();
       s.chats[id]={id, title:"New chat", messages:[], updatedAt:Date.now()};
-      s.activeId=id; saveStore(s); history.replaceState({mp3ai:true},"",ROUTE_CHAT(id)); renderSidebar(); renderBody(); closeSidebar();
+      s.activeId=id; saveStore(s); history.replaceState({mp3ai:true},"",ROUTE); renderSidebar(); renderBody(); closeSidebar();
     });
     sendBtn.addEventListener("click", handleSend);
     inputEl.addEventListener("keydown", e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} });
@@ -420,7 +420,7 @@
       const item = document.createElement("div");
       item.className = "mp3ai-chat-item"+(c.id===s.activeId?" active":"");
       item.innerHTML = `<span>${esc(c.title||"New chat")}</span><button class="mp3ai-chat-del" type="button">${svgTrash}</button>`;
-      item.addEventListener("click", e=>{ if(e.target.closest(".mp3ai-chat-del"))return; const s2=loadStore(); s2.activeId=c.id; saveStore(s2); history.replaceState({mp3ai:true},"",ROUTE_CHAT(c.id)); renderSidebar(); renderBody(); closeSidebar(); });
+      item.addEventListener("click", e=>{ if(e.target.closest(".mp3ai-chat-del"))return; const s2=loadStore(); s2.activeId=c.id; saveStore(s2); const hasMsg=c.messages&&c.messages.some(m=>m.role==="user"); history.replaceState({mp3ai:true},"",hasMsg?ROUTE_CHAT(c.id):ROUTE); renderSidebar(); renderBody(); closeSidebar(); });
       item.querySelector(".mp3ai-chat-del").addEventListener("click", e=>{ e.stopPropagation(); const s2=loadStore(); delete s2.chats[c.id]; if(!Object.keys(s2.chats).length){const id=uid();s2.chats[id]={id,title:"New chat",messages:[],updatedAt:Date.now()};s2.activeId=id;} else if(s2.activeId===c.id){s2.activeId=Object.values(s2.chats).sort((a,b)=>b.updatedAt-a.updatedAt)[0].id;} saveStore(s2); renderSidebar(); renderBody(); });
       chatListEl.appendChild(item);
     });
@@ -619,7 +619,7 @@
     inputEl.value=""; inputEl.style.height="auto";
     const s=loadStore(), chat=getActiveChat(s);
     chat.messages.push({id:uid(), role:"user", content:text});
-    if(chat.messages.filter(m=>m.role==="user").length===1) chat.title=titleFromText(text);
+    if(chat.messages.filter(m=>m.role==="user").length===1){ chat.title=titleFromText(text); history.replaceState({mp3ai:true},"",ROUTE_CHAT(s.activeId)); }
     chat.updatedAt=Date.now(); saveStore(s); renderSidebar();
     await runAssistantTurn(text);
   }
@@ -655,8 +655,10 @@
     renderSidebar(); renderBody();
     overlay.classList.add("mp3ai-open");
     if (pushUrl!==false) {
-      const st=loadStore(); const chatUrl=ROUTE_CHAT(st.activeId);
-      if(location.pathname!==chatUrl){ prevPath=location.pathname+location.search; history.pushState({mp3ai:true},"",chatUrl); }
+      const st=loadStore(); const chat=getActiveChat(st);
+      const hasMessages=chat.messages.some(m=>m.role==="user");
+      const targetUrl=hasMessages?ROUTE_CHAT(st.activeId):ROUTE;
+      if(location.pathname!==targetUrl){ prevPath=location.pathname+location.search; history.pushState({mp3ai:true},"",targetUrl); }
     }
     setTimeout(()=>inputEl?.focus(),200);
   }
