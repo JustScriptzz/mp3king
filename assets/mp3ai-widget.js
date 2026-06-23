@@ -9,8 +9,8 @@
   const AI_NAME          = "Kingy";
   const ROUTE            = "/chat";
 
-  const WLLAMA_CDN  = "https://cdn.jsdelivr.net/npm/@wllama/wllama@2/esm/";
-  const MODEL_URL   = "https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf";
+  const WLLAMA_CDN  = "https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/";
+  const MODEL_URL   = "https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE    = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
   const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -21,6 +21,7 @@
   let _wllama      = null;
   let _modelState  = "idle";   // idle | loading | ready | error
   let _modelPromise = null;
+  let _lastError   = "";
 
   async function loadModel(onProgress) {
     if (_modelState === "ready") return true;
@@ -42,8 +43,10 @@
         _modelState = "ready";
         localStorage.setItem(MODEL_READY_KEY, "1");
       } catch (e) {
+        console.error("KingyLocal load error:", e);
         _modelState = "error";
         _modelPromise = null;
+        _lastError = (e && e.message) || String(e);
         throw e;
       }
     })();
@@ -518,8 +521,8 @@
       lbl.textContent = `Downloading… ${pct}%`;
     }).then(ok => {
       if (ok) { renderSidebar(); renderBody(); }
-      else    { if(lbl) lbl.textContent = "Error. Try refreshing."; }
-    }).catch(() => { if(lbl) document.getElementById("mp3ai-progress-label") && (document.getElementById("mp3ai-progress-label").textContent = "Error loading model."); });
+      else    { if(lbl) lbl.textContent = "Error: " + (_lastError || "unknown"); if(btn) btn.disabled = false; }
+    }).catch(() => { const l=document.getElementById("mp3ai-progress-label"); if(l) l.textContent = "Error: " + (_lastError || "unknown"); if(btn) btn.disabled = false; });
   }
 
   /* ---- message rows ---- */
@@ -627,6 +630,12 @@
     chat.messages=chat.messages.slice(0,idx+1); saveStore(s);
     await runAssistantTurn(text);
   }
+
+  window.KingyLocal = {
+    preload: () => loadModel(),
+    isReady: () => _modelState === "ready",
+    getState: () => _modelState,
+  };
 
   /* ---- auto-load model on page open (if already installed) ---- */
   function autoLoad() {
