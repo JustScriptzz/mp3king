@@ -5,12 +5,12 @@
      CONFIG
   ============================================================ */
   const STORE_KEY        = "mp3king_ai_chat";
-  const MODEL_READY_KEY  = "mp3king_kingy_installed";
+  const MODEL_READY_KEY  = "mp3king_kingy_q25_15b";
   const AI_NAME          = "Kingy";
   const ROUTE            = "/chat";
 
   const WLLAMA_CDN  = "https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/";
-  const MODEL_URL   = "https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf";
+  const MODEL_URL   = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE    = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
   const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -37,7 +37,7 @@
           "multi-thread/wllama.wasm":  WLLAMA_CDN + "multi-thread/wllama.wasm",
         });
         await _wllama.loadModelFromUrl(MODEL_URL, {
-          n_ctx: 1024,
+          n_ctx: 2048,
           progressCallback: ({ loaded, total }) => onProgress && onProgress(loaded, total),
         });
         _modelState = "ready";
@@ -65,7 +65,7 @@
     const prompt = buildChatML(messages);
     let out = "";
     await _wllama.createCompletion(prompt, {
-      nPredict: 300,
+      nPredict: 512,
       sampling: { temp: 0.8, top_p: 0.9 },
       onNewToken: (_tok, _piece, cur) => {
         out = cur.split("<|im_end|>")[0];
@@ -469,7 +469,7 @@
     wrap.innerHTML = `
       ${mascotHTML()}
       <h2>Meet ${AI_NAME}</h2>
-      <p>Your local AI music assistant. The first time, the model (~90MB) downloads and installs on your device. After that it loads instantly every visit — no internet needed.</p>
+      <p>Your local AI music assistant. The first time, the model (~900MB) downloads and installs on your device. After that it loads instantly every visit — no internet needed.</p>
       <button id="mp3ai-start-btn" type="button">${svgCpu}<span>Start Listening</span></button>
       <div id="mp3ai-progress-wrap" style="display:none">
         <div id="mp3ai-progress-label">Downloading model…</div>
