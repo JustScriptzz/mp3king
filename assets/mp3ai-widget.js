@@ -301,6 +301,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
 - Delete playlist:       {"action":"delete_playlist","playlistName":"My Playlist"}
 - Rename playlist:       {"action":"rename_playlist","playlistName":"Old Name","newName":"New Name"}
 - Add track to playlist: {"action":"add_to_playlist","query":"Song - Artist","playlistName":"My Playlist"}
+- Add MULTIPLE tracks:   {"action":"add_multiple_to_playlist","tracks":["Song1 - Artist1","Song2 - Artist2"],"playlistName":"My Playlist"}
 - Remove from playlist:  {"action":"remove_from_playlist","query":"Song - Artist","playlistName":"My Playlist"}
 - Clear liked tracks:    {"action":"clear_liked"}
 - Play preview:          {"action":"play_preview","query":"Song - Artist"}
@@ -319,6 +320,8 @@ You can take real actions inside mp3king on behalf of the user. When the user as
 - Always explain what you're about to do before the [[ACTION]] block.
 - Emit the [[ACTION]] block at the END of your message, NEVER in the middle.
 - Only emit one action per reply.
+- When the user asks to add multiple songs at once, use add_multiple_to_playlist with all tracks in the array — never do them one by one.
+- When the user asks to like multiple songs, use like_multiple with a tracks array.
 - If the user's request is ambiguous, ask for clarification before acting.
 
 ## User info: ${ctx}`;
@@ -357,6 +360,8 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       case "rename_playlist":    return `Rename "${a.playlistName}" → "${a.newName}"`;
       case "add_to_playlist":    return `Add "${a.query}" to playlist "${a.playlistName}"`;
       case "remove_from_playlist": return `Remove "${a.query}" from playlist "${a.playlistName}"`;
+      case "add_multiple_to_playlist": return `Add ${a.tracks?.length || 0} tracks to playlist "${a.playlistName}": ${(a.tracks||[]).slice(0,3).join(", ")}${a.tracks?.length > 3 ? ` +${a.tracks.length-3} more` : ""}`;
+      case "like_multiple":      return `Like ${a.tracks?.length || 0} tracks: ${(a.tracks||[]).slice(0,3).join(", ")}${a.tracks?.length > 3 ? ` +${a.tracks.length-3} more` : ""}`;
       case "clear_liked":        return `Clear ALL liked tracks (cannot be undone)`;
       case "play_preview":       return `Play a preview of "${a.query}"`;
       case "pause_playback":     return `Pause current playback`;
@@ -397,6 +402,23 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         localStorage.setItem(LS.likedIds, JSON.stringify([...ids]));
         lsSet(LS.likedTrks, tracks);
         return `Removed "${t.title} - ${t.artist}" from liked.`;
+      }
+
+      case "like_multiple": {
+        const ids = getLikedIds();
+        const tracks = getLikedTracks();
+        let added = 0;
+        for (const q of (a.tracks || [])) {
+          const t = await searchTrack(q);
+          if (t && !ids.has(t.id)) {
+            ids.add(t.id);
+            tracks.push({ id: t.id, title: t.title, artist: t.artist, album: t.album, coverUrl: t.coverUrl });
+            added++;
+          }
+        }
+        localStorage.setItem(LS.likedIds, JSON.stringify([...ids]));
+        lsSet(LS.likedTrks, tracks);
+        return `❤️ Liked ${added} tracks.`;
       }
 
       case "clear_liked": {
@@ -446,6 +468,22 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         match.tracks.push({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration, coverUrl: t.coverUrl });
         savePlaylists(pl);
         return `✅ Added "${t.title} - ${t.artist}" to "${match.name}". Refresh to see it.`;
+      }
+
+      case "add_multiple_to_playlist": {
+        const pl = getPlaylists();
+        const match = pl.find(p => p.name.toLowerCase() === a.playlistName.toLowerCase());
+        if (!match) throw new Error(`Playlist "${a.playlistName}" not found.`);
+        let added = 0, skipped = 0;
+        for (const q of (a.tracks || [])) {
+          const t = await searchTrack(q);
+          if (!t) { skipped++; continue; }
+          if (match.tracks.find(x => x.id === t.id)) { skipped++; continue; }
+          match.tracks.push({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration, coverUrl: t.coverUrl });
+          added++;
+        }
+        savePlaylists(pl);
+        return `✅ Added ${added} tracks to "${match.name}"${skipped ? ` (${skipped} skipped)` : ""}. Refresh to see them.`;
       }
 
       case "remove_from_playlist": {
