@@ -4,14 +4,12 @@
   /* ============================================================
      CONFIG
   ============================================================ */
-  const STORE_KEY        = "mp3king_ai_chat";
-  const MODEL_READY_KEY  = "mp3king_kingy_q25_05b";
-  const AI_NAME          = "Kingy";
-  const ROUTE            = "/chat";
-  const ROUTE_CHAT = id => `/chat/${id}`;
-
-  const WLLAMA_CDN  = "https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/";
-  const MODEL_URL   = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
+  const STORE_KEY    = "mp3king_ai_chat";
+  const AI_NAME      = "Kingy";
+  const ROUTE        = "/chat";
+  const ROUTE_CHAT   = id => `/chat/${id}`;
+  const LLM_ENDPOINT = "https://text.pollinations.ai/openai";
+  const LLM_MODEL    = "openai-fast";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE    = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
   const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -19,64 +17,39 @@
   /* ============================================================
      LOCAL MODEL STATE
   ============================================================ */
-  let _wllama      = null;
-  let _modelState  = "idle";   // idle | loading | ready | error
-  let _modelPromise = null;
-  let _lastError   = "";
-
-  async function loadModel(onProgress) {
-    if (_modelState === "ready") return true;
-    if (_modelPromise) { await _modelPromise; return _modelState === "ready"; }
-
-    _modelState = "loading";
-    _modelPromise = (async () => {
-      try {
-        const mod = await import(WLLAMA_CDN + "index.js");
-        const Wllama = mod.Wllama || mod.default?.Wllama || mod.default;
-        _wllama = new Wllama({
-          "single-thread/wllama.wasm": WLLAMA_CDN + "single-thread/wllama.wasm",
-          "multi-thread/wllama.wasm":  WLLAMA_CDN + "multi-thread/wllama.wasm",
-        });
-        await _wllama.loadModelFromUrl(MODEL_URL, {
-          n_ctx: 2048,
-          progressCallback: ({ loaded, total }) => onProgress && onProgress(loaded, total),
-        });
-        _modelState = "ready";
-        localStorage.setItem(MODEL_READY_KEY, "1");
-      } catch (e) {
-        console.error("KingyLocal load error:", e);
-        _modelState = "error";
-        _modelPromise = null;
-        _lastError = (e && e.message) || String(e);
-        throw e;
-      }
-    })();
-    await _modelPromise;
-    return _modelState === "ready";
-  }
-
-  function buildChatML(messages) {
-    let p = "";
-    for (const m of messages) p += `<|im_start|>${m.role}\n${m.content}<|im_end|>\n`;
-    p += "<|im_start|>assistant\n";
-    return p;
-  }
-
-  async function localInference(messages, onToken) {
-    const prompt = buildChatML(messages);
-    let out = "";
-    await _wllama.createCompletion(prompt, {
-      nPredict: 512,
-      sampling: { temp: 0.8, top_p: 0.9 },
-      onNewToken: (_tok, _piece, cur) => {
-        out = cur.split("<|im_end|>")[0];
-        onToken(out);
-      },
-    });
-    return out.trim();
-  }
-
   /* ============================================================
+     CLOUD INFERENCE (Pollinations text, anonymous tier)
+  ============================================================ */
+  async function streamLLM(messages, onToken) {
+    const res = await fetch(LLM_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: LLM_MODEL, messages, stream: true, seed: -1, private: true }),
+    });
+    if (!res.ok || !res.body) throw new Error("LLM error " + res.status);
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "", full = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n"); buffer = lines.pop();
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith("data:")) continue;
+        const payload = t.slice(5).trim();
+        if (payload === "[DONE]") continue;
+        try {
+          const delta = JSON.parse(payload)?.choices?.[0]?.delta?.content;
+          if (delta) { full += delta; onToken(full); }
+        } catch {}
+      }
+    }
+    return full;
+  }
+
+    /* ============================================================
      STYLES
   ============================================================ */
   const style = document.createElement("style");
@@ -452,79 +425,10 @@
   /* ---- render body ---- */
   function renderBody() {
     bodyEl.innerHTML = "";
-    if (_modelState === "idle" && !localStorage.getItem(MODEL_READY_KEY)) {
-      renderSetupScreen(); return;
-    }
-    if (_modelState === "loading") {
-      renderLoadingScreen(); return;
-    }
     const s = loadStore(), chat = getActiveChat(s);
     if (!chat.messages.length) { renderEmptyState(); return; }
     chat.messages.forEach(m=>{ bodyEl.appendChild(buildRow(m)); if(m.role==="assistant"&&m.pendingAction) bodyEl.appendChild(buildActionCard(m.pendingAction)); });
     bodyEl.scrollTop = bodyEl.scrollHeight;
-  }
-
-  function renderSetupScreen() {
-    const wrap = document.createElement("div");
-    wrap.id = "mp3ai-setup";
-    wrap.innerHTML = `
-      ${mascotHTML()}
-      <h2>Meet ${AI_NAME}</h2>
-      <p>Your local AI music assistant. The first time, the model (~300MB) downloads and installs on your device. After that it loads instantly every visit — no internet needed.</p>
-      <button id="mp3ai-start-btn" type="button">${svgCpu}<span>Start Listening</span></button>
-      <div id="mp3ai-progress-wrap" style="display:none">
-        <div id="mp3ai-progress-label">Downloading model…</div>
-        <div id="mp3ai-progress-bar"><div id="mp3ai-progress-fill"></div></div>
-      </div>`;
-    bodyEl.appendChild(wrap);
-    wrap.querySelector("#mp3ai-start-btn").addEventListener("click", startInstall);
-  }
-
-  function renderLoadingScreen() {
-    const wrap = document.createElement("div");
-    wrap.id = "mp3ai-setup";
-    wrap.innerHTML = `
-      ${mascotHTML()}
-      <h2>Loading ${AI_NAME}…</h2>
-      <div id="mp3ai-progress-wrap">
-        <div id="mp3ai-progress-label">Warming up the model…</div>
-        <div id="mp3ai-progress-bar"><div id="mp3ai-progress-fill" style="width:100%;animation:mp3ai-pulse-bar 1.5s infinite"></div></div>
-      </div>`;
-    bodyEl.appendChild(wrap);
-  }
-
-  function renderEmptyState() {
-    const wrap = document.createElement("div");
-    wrap.id = "mp3ai-empty";
-    wrap.innerHTML = `
-      ${mascotHTML()}
-      <h2>What's on your mind today?</h2>
-      <p>Ask me for music recs, generate an image, or get me to act on your library.</p>
-      <div class="mp3ai-suggestions">
-        <button class="mp3ai-chip" data-q="Based on what I listen to, what do you recommend?">Recommend something</button>
-        <button class="mp3ai-chip" data-q="Give me a summary of my music taste">My taste</button>
-        <button class="mp3ai-chip" data-q="Generate an image inspired by what I'm listening to">Generate image</button>
-      </div>`;
-    wrap.querySelectorAll(".mp3ai-chip").forEach(ch=>ch.addEventListener("click",()=>{ inputEl.value=ch.dataset.q; handleSend(); }));
-    bodyEl.appendChild(wrap);
-  }
-
-  function startInstall() {
-    const btn  = document.getElementById("mp3ai-start-btn");
-    const prog = document.getElementById("mp3ai-progress-wrap");
-    const fill = document.getElementById("mp3ai-progress-fill");
-    const lbl  = document.getElementById("mp3ai-progress-label");
-    if (btn) btn.disabled = true;
-    if (prog) prog.style.display = "block";
-    loadModel((loaded, total) => {
-      if (!fill||!lbl) return;
-      const pct = total ? Math.round(loaded/total*100) : 0;
-      fill.style.width = pct+"%";
-      lbl.textContent = `Downloading… ${pct}%`;
-    }).then(ok => {
-      if (ok) { renderSidebar(); renderBody(); }
-      else    { if(lbl) lbl.textContent = "Error: " + (_lastError || "unknown"); if(btn) btn.disabled = false; }
-    }).catch(() => { const l=document.getElementById("mp3ai-progress-label"); if(l) l.textContent = "Error: " + (_lastError || "unknown"); if(btn) btn.disabled = false; });
   }
 
   /* ---- message rows ---- */
@@ -585,7 +489,7 @@
       ];
 
       let lastRender="";
-      const full = await localInference(messages, partial=>{
+      const full = await streamLLM(messages, partial=>{
         const display = partial.replace(ACTION_RE,"").trimEnd();
         if(display!==lastRender){
           lastRender=display;
@@ -614,7 +518,6 @@
   }
 
   async function handleSend() {
-    if (_modelState !== "ready") return;
     const text = inputEl.value.trim(); if(!text) return;
     inputEl.value=""; inputEl.style.height="auto";
     const s=loadStore(), chat=getActiveChat(s);
@@ -625,7 +528,6 @@
   }
 
   async function resendFrom(userMsgId) {
-    if (_modelState !== "ready") return;
     const s=loadStore(), chat=getActiveChat(s);
     const idx=chat.messages.findIndex(m=>m.id===userMsgId); if(idx===-1)return;
     const text=chat.messages[idx].content;
@@ -633,22 +535,10 @@
     await runAssistantTurn(text);
   }
 
-  window.KingyLocal = {
-    preload: () => loadModel(),
-    isReady: () => _modelState === "ready",
-    getState: () => _modelState,
-  };
+
 
   /* ---- auto-load model on page open (if already installed) ---- */
-  function autoLoad() {
-    if (!localStorage.getItem(MODEL_READY_KEY)) return;
-    if (statusBadge) { statusBadge.textContent="Loading Kingy…"; statusBadge.classList.add("visible"); }
-    loadModel().then(ok=>{
-      if(statusBadge){ statusBadge.classList.remove("visible"); }
-      if(ok && overlay?.classList.contains("mp3ai-open")) renderBody();
-    }).catch(()=>{ if(statusBadge) statusBadge.classList.remove("visible"); });
-  }
-
+  
   /* ---- open / close overlay + /chat route ---- */
   function openOverlay(pushUrl) {
     if (!overlay) createOverlay();
@@ -698,9 +588,7 @@
       if(chatId){ const st=loadStore(); if(st.chats[chatId]){st.activeId=chatId;saveStore(st);} }
       setTimeout(()=>openOverlay(false),50);
     }
-    // auto-load model in background if already installed
-    if (document.readyState==="complete") autoLoad();
-    else window.addEventListener("load", autoLoad);
+
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
