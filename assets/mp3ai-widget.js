@@ -309,7 +309,8 @@
   }
 
   function systemPrompt() {
-    return `You are ${AI_NAME}, the music AI inside mp3king app. Your name is ${AI_NAME}. You have access to the user's listening data and use it for personalized recommendations. Be friendly, concise, direct. Reply in the user's language. User data: ${buildUserContext()} To propose an action on the app append at the end: [[ACTION]]{"action":"..."}[[/ACTION]] Available actions: add_to_queue(query), play_now(query), remove_from_queue(query), like_track(query), create_playlist(name,tracks[]), add_to_playlist(playlistName,query). Max one action per reply. Only include ACTION if user explicitly asked to do something on the app.`;
+    const ctx = buildUserContext();
+    return `You are Kingy, a friendly music AI in mp3king. Answer only about music and the app. Keep replies short. User info: ${ctx}`;
   }
 
   /* ============================================================
@@ -373,7 +374,7 @@
             <button class="mp3ai-icon-btn" id="mp3ai-menu" type="button">${svgMenu}</button>
             <div class="mp3ai-title-wrap">
               <div class="mp3ai-title">${svgSpark}${AI_NAME}</div>
-              <div class="mp3ai-subtitle">Powered by Open AI</div>
+              
             </div>
           </div>
           <button class="mp3ai-icon-btn" id="mp3ai-close" type="button">${svgClose}</button>
@@ -657,7 +658,7 @@
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if(!skipNav && location.pathname===ROUTE) history.pushState({},"",prevPath||"/");
+    if(!skipNav && (location.pathname===ROUTE||location.pathname.startsWith(ROUTE+"/"))) history.pushState({},"",prevPath||"/");
   }
   window.addEventListener("popstate",()=>{ if(location.pathname===ROUTE) openOverlay(false); else closeOverlay(true); });
 
