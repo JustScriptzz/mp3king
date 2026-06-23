@@ -693,22 +693,16 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         <button type="button" class="mp3ai-cancel">Cancel</button>
       </div>`;
     card.querySelector(".mp3ai-cancel").addEventListener("click", () => {
-      card.querySelector(".mp3ai-action-buttons").remove();
-      const r = document.createElement("div"); r.className = "mp3ai-action-result"; r.textContent = "Cancelled.";
-      card.appendChild(r);
+      card.remove();
     });
     card.querySelector(".mp3ai-approve").addEventListener("click", async () => {
       const btns = card.querySelector(".mp3ai-action-buttons");
       btns.querySelectorAll("button").forEach(b => b.disabled = true);
       try {
-        const res = await executeAction(action);
-        btns.remove();
-        const r = document.createElement("div"); r.className = "mp3ai-action-result"; r.textContent = "✓ " + res;
-        card.appendChild(r);
+        await executeAction(action);
+        card.remove();
       } catch (e) {
-        btns.remove();
-        const r = document.createElement("div"); r.className = "mp3ai-action-result"; r.textContent = "✗ " + (e.message || "Error");
-        card.appendChild(r);
+        card.innerHTML = `<div class="mp3ai-action-result" style="color:#ef4444">✗ ${esc(e.message || "Error")}</div>`;
       }
     });
     return card;
