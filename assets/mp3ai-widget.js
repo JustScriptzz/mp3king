@@ -8,6 +8,7 @@
   const MODEL_READY_KEY  = "mp3king_kingy_q25_15b";
   const AI_NAME          = "Kingy";
   const ROUTE            = "/chat";
+  const ROUTE_CHAT = id => `/chat/${id}`;
 
   const WLLAMA_CDN  = "https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/";
   const MODEL_URL   = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf";
@@ -401,7 +402,7 @@
     overlay.querySelector("#mp3ai-new-chat").addEventListener("click", () => {
       const s=loadStore(), id=uid();
       s.chats[id]={id, title:"New chat", messages:[], updatedAt:Date.now()};
-      s.activeId=id; saveStore(s); renderSidebar(); renderBody(); closeSidebar();
+      s.activeId=id; saveStore(s); history.replaceState({mp3ai:true},"",ROUTE_CHAT(id)); renderSidebar(); renderBody(); closeSidebar();
     });
     sendBtn.addEventListener("click", handleSend);
     inputEl.addEventListener("keydown", e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} });
@@ -419,7 +420,7 @@
       const item = document.createElement("div");
       item.className = "mp3ai-chat-item"+(c.id===s.activeId?" active":"");
       item.innerHTML = `<span>${esc(c.title||"New chat")}</span><button class="mp3ai-chat-del" type="button">${svgTrash}</button>`;
-      item.addEventListener("click", e=>{ if(e.target.closest(".mp3ai-chat-del"))return; const s2=loadStore(); s2.activeId=c.id; saveStore(s2); renderSidebar(); renderBody(); closeSidebar(); });
+      item.addEventListener("click", e=>{ if(e.target.closest(".mp3ai-chat-del"))return; const s2=loadStore(); s2.activeId=c.id; saveStore(s2); history.replaceState({mp3ai:true},"",ROUTE_CHAT(c.id)); renderSidebar(); renderBody(); closeSidebar(); });
       item.querySelector(".mp3ai-chat-del").addEventListener("click", e=>{ e.stopPropagation(); const s2=loadStore(); delete s2.chats[c.id]; if(!Object.keys(s2.chats).length){const id=uid();s2.chats[id]={id,title:"New chat",messages:[],updatedAt:Date.now()};s2.activeId=id;} else if(s2.activeId===c.id){s2.activeId=Object.values(s2.chats).sort((a,b)=>b.updatedAt-a.updatedAt)[0].id;} saveStore(s2); renderSidebar(); renderBody(); });
       chatListEl.appendChild(item);
     });
@@ -653,14 +654,23 @@
     if (!overlay) createOverlay();
     renderSidebar(); renderBody();
     overlay.classList.add("mp3ai-open");
-    if (pushUrl!==false && location.pathname!==ROUTE) { prevPath=location.pathname+location.search; history.pushState({mp3ai:true},"",ROUTE); }
+    if (pushUrl!==false) {
+      const st=loadStore(); const chatUrl=ROUTE_CHAT(st.activeId);
+      if(location.pathname!==chatUrl){ prevPath=location.pathname+location.search; history.pushState({mp3ai:true},"",chatUrl); }
+    }
     setTimeout(()=>inputEl?.focus(),200);
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
     if(!skipNav && (location.pathname===ROUTE||location.pathname.startsWith(ROUTE+"/"))) history.pushState({},"",prevPath||"/");
   }
-  window.addEventListener("popstate",()=>{ if(location.pathname===ROUTE) openOverlay(false); else closeOverlay(true); });
+  window.addEventListener("popstate",()=>{
+    if(location.pathname===ROUTE||location.pathname.startsWith(ROUTE+"/")){
+      const parts=location.pathname.split("/"); const chatId=parts[2];
+      if(chatId){ const st=loadStore(); if(st.chats[chatId]){st.activeId=chatId;saveStore(st);} }
+      openOverlay(false);
+    } else { closeOverlay(true); }
+  });
 
   /* ---- anchor button in Queue panel ---- */
   function tryMountAnchorButton() {
@@ -681,7 +691,11 @@
       const obs=new MutationObserver(()=>tryMountAnchorButton());
       obs.observe(document.body,{childList:true,subtree:true});
     }
-    if (location.pathname===ROUTE) setTimeout(()=>openOverlay(false),50);
+    if(location.pathname===ROUTE||location.pathname.startsWith(ROUTE+"/")){
+      const parts=location.pathname.split("/"); const chatId=parts[2];
+      if(chatId){ const st=loadStore(); if(st.chats[chatId]){st.activeId=chatId;saveStore(st);} }
+      setTimeout(()=>openOverlay(false),50);
+    }
     // auto-load model in background if already installed
     if (document.readyState==="complete") autoLoad();
     else window.addEventListener("load", autoLoad);
