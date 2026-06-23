@@ -422,6 +422,22 @@
     return `<div class="mp3ai-mascot">${c}</div>`;
   }
 
+  function renderEmptyState() {
+    const wrap = document.createElement("div");
+    wrap.id = "mp3ai-empty";
+    wrap.innerHTML = `
+      ${mascotHTML()}
+      <h2>What's on your mind today?</h2>
+      <p>Ask me for music recs, generate an image, or get me to act on your library.</p>
+      <div class="mp3ai-suggestions">
+        <button class="mp3ai-chip" data-q="Based on what I listen to, what do you recommend?">Recommend something</button>
+        <button class="mp3ai-chip" data-q="Give me a summary of my music taste">My taste</button>
+        <button class="mp3ai-chip" data-q="Generate an image inspired by what I am listening to">Generate image</button>
+      </div>`;
+    wrap.querySelectorAll(".mp3ai-chip").forEach(ch=>ch.addEventListener("click",()=>{ inputEl.value=ch.dataset.q; handleSend(); }));
+    bodyEl.appendChild(wrap);
+  }
+
   /* ---- render body ---- */
   function renderBody() {
     bodyEl.innerHTML = "";
