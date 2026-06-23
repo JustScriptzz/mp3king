@@ -8,8 +8,8 @@
   const AI_NAME      = "Kingy";
   const ROUTE        = "/chat";
   const ROUTE_CHAT   = id => `/chat/${id}`;
-  const LLM_ENDPOINT = "https://text.pollinations.ai/openai";
-  const LLM_MODEL    = "openai-fast";
+  const LLM_BASE  = "https://text.pollinations.ai";
+  const LLM_MODEL = "openai";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE    = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
   const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -21,32 +21,33 @@
      CLOUD INFERENCE (Pollinations text, anonymous tier)
   ============================================================ */
   async function streamLLM(messages, onToken) {
-    const res = await fetch(LLM_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: LLM_MODEL, messages, stream: true, seed: -1, private: true }),
-    });
-    if (!res.ok || !res.body) throw new Error("LLM error " + res.status);
+    // Build system + last messages into a prompt for the GET endpoint
+    const sysMsg   = messages.find(m=>m.role==="system")?.content || "";
+    const chatMsgs = messages.filter(m=>m.role!=="system");
+    // Reconstruct as a flat prompt for simple GET
+    const lastUser = [...chatMsgs].reverse().find(m=>m.role==="user")?.content || "";
+    // History context (last 6 messages, excluding last user)
+    const history  = chatMsgs.slice(-7, -1).map(m=>`${m.role==="user"?"User":"Kingy"}: ${m.content}`).join("\n");
+    const prompt   = history ? `${history}\nUser: ${lastUser}` : lastUser;
+
+    const url = LLM_BASE + "/" + encodeURIComponent(prompt)
+      + "?model=" + LLM_MODEL
+      + "&system=" + encodeURIComponent(sysMsg)
+      + "&seed=" + Math.floor(Math.random()*1e9)
+      + "&private=true";
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("LLM error " + res.status);
     const reader  = res.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "", full = "";
+    let full = "";
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n"); buffer = lines.pop();
-      for (const line of lines) {
-        const t = line.trim();
-        if (!t.startsWith("data:")) continue;
-        const payload = t.slice(5).trim();
-        if (payload === "[DONE]") continue;
-        try {
-          const delta = JSON.parse(payload)?.choices?.[0]?.delta?.content;
-          if (delta) { full += delta; onToken(full); }
-        } catch {}
-      }
+      full += decoder.decode(value, { stream: true });
+      onToken(full);
     }
-    return full;
+    return full.trim();
   }
 
     /* ============================================================
