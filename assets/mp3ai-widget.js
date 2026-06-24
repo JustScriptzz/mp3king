@@ -917,7 +917,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     while (c && c.parentElement && c.clientHeight < 80 && c.parentElement !== document.body) c = c.parentElement;
     if (!c) return false;
     const btn = document.createElement("button"); btn.id = "mp3ai-anchor-btn"; btn.type = "button";
-    btn.innerHTML = `${svgSpark}<span>${AI_NAME}</span>`;
+    btn.innerHTML = `${svgSpark}<span>Talk to ${AI_NAME}</span>`;
     btn.addEventListener("click", () => openOverlay());
     c.appendChild(btn); return true;
   }
