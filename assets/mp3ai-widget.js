@@ -6,8 +6,8 @@
   ============================================================ */
   const STORE_KEY  = "mp3king_ai_chat";
   const AI_NAME    = "Kingy";
-  const ROUTE      = "/chat";
-  const ROUTE_CHAT = id => `/chat/${id}`;
+  const ROUTE      = "#kingy";
+  const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://text.pollinations.ai";
   const LLM_MODEL  = "openai";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
@@ -653,7 +653,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const s = loadStore(), id = uid();
       s.chats[id] = { id, title: "New chat", messages: [], updatedAt: Date.now() };
       s.activeId = id; saveStore(s);
-      history.replaceState({ mp3ai: true }, "", ROUTE);
+      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE);
       renderSidebar(); renderBody(); closeSidebar();
     });
     sendBtn.addEventListener("click", handleSend);
@@ -676,7 +676,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         if (e.target.closest(".mp3ai-chat-del")) return;
         const s2 = loadStore(); s2.activeId = c.id; saveStore(s2);
         const hasMsg = c.messages && c.messages.some(m => m.role === "user");
-        history.replaceState({ mp3ai: true }, "", hasMsg ? ROUTE_CHAT(c.id) : ROUTE);
+        history.replaceState({ mp3ai: true }, "", location.pathname + (hasMsg ? ROUTE_CHAT(c.id) : ROUTE));
         renderSidebar(); renderBody(); closeSidebar();
       });
       item.querySelector(".mp3ai-chat-del").addEventListener("click", e => {
@@ -865,7 +865,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     chat.messages.push({ id: uid(), role: "user", content: text });
     if (chat.messages.filter(m => m.role === "user").length === 1) {
       chat.title = titleFromText(text);
-      history.replaceState({ mp3ai: true }, "", ROUTE_CHAT(s.activeId));
+      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE_CHAT(s.activeId));
     }
     chat.updatedAt = Date.now(); saveStore(s); renderSidebar();
     await runAssistantTurn(text);
@@ -889,21 +889,23 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     if (pushUrl !== false) {
       const st = loadStore(), chat = getActiveChat(st);
       const hasMessages = chat.messages.some(m => m.role === "user");
-      const targetUrl = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
-      if (location.pathname !== targetUrl) { prevPath = location.pathname + location.search; history.pushState({ mp3ai: true }, "", targetUrl); }
+      const targetHash = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
+      if (location.hash !== targetHash) history.pushState({ mp3ai: true }, "", targetHash);
     }
     setTimeout(() => inputEl?.focus(), 200);
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if (!skipNav) { window.location.href = "/"; }
+    if (!skipNav) { history.pushState({}, "", location.pathname); window.location.href = "/"; }
   }
-  window.addEventListener("popstate", () => {
-    if (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/")) {
-      const parts = location.pathname.split("/"); const chatId = parts[2];
-      if (chatId) { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
+  window.addEventListener("hashchange", () => {
+    if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {
+      const chatId = location.hash.replace("#kingy-", "");
+      if (chatId && chatId !== "kingy") { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
       openOverlay(false);
-    } else { closeOverlay(true); }
+    } else if (overlay?.classList.contains("mp3ai-open")) {
+      closeOverlay(true);
+    }
   });
 
   /* ============================================================
@@ -927,9 +929,9 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const obs = new MutationObserver(() => tryMountAnchorButton());
       obs.observe(document.body, { childList: true, subtree: true });
     }
-    if (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/")) {
-      const parts = location.pathname.split("/"); const chatId = parts[2];
-      if (chatId) { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
+    if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {
+      const chatId = location.hash.replace("#kingy-", "");
+      if (chatId && chatId !== "kingy") { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
       setTimeout(() => openOverlay(false), 50);
     }
   }
