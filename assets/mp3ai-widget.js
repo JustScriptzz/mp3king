@@ -6,8 +6,8 @@
   ============================================================ */
   const STORE_KEY  = "mp3king_ai_chat";
   const AI_NAME    = "Kingy";
-  const ROUTE      = "#kingy";
-  const ROUTE_CHAT = id => `#kingy-${id}`;
+  const ROUTE      = "/chat";
+  const ROUTE_CHAT = id => `/chat/${id}`;
   const LLM_BASE   = "https://text.pollinations.ai";
   const LLM_MODEL  = "openai";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
@@ -302,7 +302,6 @@ You can take real actions inside mp3king on behalf of the user. When the user as
 - Rename playlist:       {"action":"rename_playlist","playlistName":"Old Name","newName":"New Name"}
 - Add track to playlist: {"action":"add_to_playlist","query":"Song - Artist","playlistName":"My Playlist"}
 - Add MULTIPLE tracks:   {"action":"add_multiple_to_playlist","tracks":["Song1 - Artist1","Song2 - Artist2"],"playlistName":"My Playlist"}
-- Import Spotify playlist: {"action":"import_spotify_playlist","url":"https://open.spotify.com/playlist/..."}
 - Remove from playlist:  {"action":"remove_from_playlist","query":"Song - Artist","playlistName":"My Playlist"}
 - Clear liked tracks:    {"action":"clear_liked"}
 - Play preview:          {"action":"play_preview","query":"Song - Artist"}
@@ -363,7 +362,6 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       case "remove_from_playlist": return `Remove "${a.query}" from playlist "${a.playlistName}"`;
       case "add_multiple_to_playlist": return `Add ${a.tracks?.length || 0} tracks to playlist "${a.playlistName}": ${(a.tracks||[]).slice(0,3).join(", ")}${a.tracks?.length > 3 ? ` +${a.tracks.length-3} more` : ""}`;
       case "like_multiple":      return `Like ${a.tracks?.length || 0} tracks: ${(a.tracks||[]).slice(0,3).join(", ")}${a.tracks?.length > 3 ? ` +${a.tracks.length-3} more` : ""}`;
-      case "import_spotify_playlist": return `Import Spotify playlist from: ${a.url}`;
       case "clear_liked":        return `Clear ALL liked tracks (cannot be undone)`;
       case "play_preview":       return `Play a preview of "${a.query}"`;
       case "pause_playback":     return `Pause current playback`;
@@ -427,45 +425,6 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         localStorage.setItem(LS.likedIds, "[]");
         lsSet(LS.likedTrks, []);
         return "All liked tracks cleared.";
-      }
-
-      case "import_spotify_playlist": {
-        const spMatch = a.url?.match(/playlist\/([A-Za-z0-9]+)/);
-        if (!spMatch) throw new Error("Invalid Spotify playlist URL.");
-        const spId = spMatch[1];
-        const spRes = await fetch("https://corsproxy.io/?url=" + encodeURIComponent("https://open.spotify.com/playlist/" + spId), {
-          signal: AbortSignal.timeout(14000),
-        });
-        if (!spRes.ok) throw new Error("Could not fetch Spotify page (" + spRes.status + ").");
-        const spHtml = await spRes.text();
-        const spScript = spHtml.match(/<script id="__NEXT_DATA__" type="application\/json">([^<]+)<\/script>/);
-        if (!spScript) throw new Error("Could not parse Spotify data — playlist may be private.");
-        const spData = JSON.parse(spScript[1]);
-        const spPl = spData?.props?.pageProps?.state?.data?.playlist;
-        if (!spPl) throw new Error("Playlist not found or is private.");
-        const spTracks = (spPl?.content?.items || []).map(item => {
-          const t = item?.itemV2?.data;
-          if (!t?.name) return null;
-          return {
-            id: "spotify-" + (t?.uri?.split(":")?.[2] || Math.random().toString(36).slice(2)),
-            title: t.name,
-            artist: t?.artists?.items?.[0]?.profile?.name || "Unknown",
-            album: t?.albumOfTrack?.name || "",
-            duration: t?.duration?.totalMilliseconds ? (() => { const s = Math.floor(t.duration.totalMilliseconds/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; })() : "0:00",
-            coverUrl: t?.albumOfTrack?.coverArt?.sources?.[0]?.url || "/placeholder.svg",
-          };
-        }).filter(Boolean);
-        if (!spTracks.length) throw new Error("No tracks found — playlist may be empty or private.");
-        const spNewPl = {
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-          name: spPl.name || "Spotify Playlist",
-          description: spPl.description || "",
-          coverUrl: spPl?.images?.items?.[0]?.sources?.[0]?.url || "",
-          tracks: spTracks,
-          createdAt: Date.now(),
-        };
-        savePlaylists([spNewPl, ...getPlaylists()]);
-        return `🟢 Imported "${spNewPl.name}" — ${spTracks.length} tracks added. Refresh to see it!`;
       }
 
       /* — PLAYLISTS — */
@@ -653,7 +612,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const s = loadStore(), id = uid();
       s.chats[id] = { id, title: "New chat", messages: [], updatedAt: Date.now() };
       s.activeId = id; saveStore(s);
-      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE);
+      history.replaceState({ mp3ai: true }, "", ROUTE);
       renderSidebar(); renderBody(); closeSidebar();
     });
     sendBtn.addEventListener("click", handleSend);
@@ -661,8 +620,8 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     inputEl.addEventListener("input", () => { inputEl.style.height = "auto"; inputEl.style.height = Math.min(inputEl.scrollHeight, 110) + "px"; });
   }
 
-  function toggleSidebar() { sidebarEl?.classList.toggle("open"); backdropEl?.classList.toggle("open"); }
-  function closeSidebar()  { sidebarEl?.classList.remove("open"); backdropEl?.classList.remove("open"); }
+  function toggleSidebar() { sidebarEl.classList.toggle("open"); backdropEl.classList.toggle("open"); }
+  function closeSidebar()  { sidebarEl.classList.remove("open"); backdropEl.classList.remove("open"); }
 
   function renderSidebar() {
     const s = loadStore();
@@ -676,7 +635,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         if (e.target.closest(".mp3ai-chat-del")) return;
         const s2 = loadStore(); s2.activeId = c.id; saveStore(s2);
         const hasMsg = c.messages && c.messages.some(m => m.role === "user");
-        history.replaceState({ mp3ai: true }, "", location.pathname + (hasMsg ? ROUTE_CHAT(c.id) : ROUTE));
+        history.replaceState({ mp3ai: true }, "", hasMsg ? ROUTE_CHAT(c.id) : ROUTE);
         renderSidebar(); renderBody(); closeSidebar();
       });
       item.querySelector(".mp3ai-chat-del").addEventListener("click", e => {
@@ -771,15 +730,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         <button type="button" class="mp3ai-approve">✓ Approve</button>
         <button type="button" class="mp3ai-cancel">Cancel</button>
       </div>`;
-    function clearStoredAction() {
-      const s = loadStore();
-      Object.values(s.chats).forEach(c => {
-        c.messages.forEach(m => { if (m.pendingAction === action) delete m.pendingAction; });
-      });
-      saveStore(s);
-    }
     card.querySelector(".mp3ai-cancel").addEventListener("click", () => {
-      clearStoredAction();
       card.remove();
     });
     card.querySelector(".mp3ai-approve").addEventListener("click", async () => {
@@ -787,10 +738,8 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       btns.querySelectorAll("button").forEach(b => b.disabled = true);
       try {
         await executeAction(action);
-        clearStoredAction();
         card.remove();
       } catch (e) {
-        clearStoredAction();
         card.innerHTML = `<div class="mp3ai-action-result" style="color:#ef4444">✗ ${esc(e.message || "Error")}</div>`;
       }
     });
@@ -865,7 +814,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     chat.messages.push({ id: uid(), role: "user", content: text });
     if (chat.messages.filter(m => m.role === "user").length === 1) {
       chat.title = titleFromText(text);
-      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE_CHAT(s.activeId));
+      history.replaceState({ mp3ai: true }, "", ROUTE_CHAT(s.activeId));
     }
     chat.updatedAt = Date.now(); saveStore(s); renderSidebar();
     await runAssistantTurn(text);
@@ -889,23 +838,21 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     if (pushUrl !== false) {
       const st = loadStore(), chat = getActiveChat(st);
       const hasMessages = chat.messages.some(m => m.role === "user");
-      const targetHash = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
-      if (location.hash !== targetHash) history.pushState({ mp3ai: true }, "", targetHash);
+      const targetUrl = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
+      if (location.pathname !== targetUrl) { prevPath = location.pathname + location.search; history.pushState({ mp3ai: true }, "", targetUrl); }
     }
     setTimeout(() => inputEl?.focus(), 200);
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if (!skipNav) { history.pushState({}, "", location.pathname); window.location.href = "/"; }
+    if (!skipNav && (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/"))) history.pushState({}, "", "/");
   }
-  window.addEventListener("hashchange", () => {
-    if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {
-      const chatId = location.hash.replace("#kingy-", "");
-      if (chatId && chatId !== "kingy") { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
+  window.addEventListener("popstate", () => {
+    if (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/")) {
+      const parts = location.pathname.split("/"); const chatId = parts[2];
+      if (chatId) { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
       openOverlay(false);
-    } else if (overlay?.classList.contains("mp3ai-open")) {
-      closeOverlay(true);
-    }
+    } else { closeOverlay(true); }
   });
 
   /* ============================================================
@@ -919,7 +866,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     while (c && c.parentElement && c.clientHeight < 80 && c.parentElement !== document.body) c = c.parentElement;
     if (!c) return false;
     const btn = document.createElement("button"); btn.id = "mp3ai-anchor-btn"; btn.type = "button";
-    btn.innerHTML = `${svgSpark}<span>Talk to ${AI_NAME}</span>`;
+    btn.innerHTML = `${svgSpark}<span>${AI_NAME}</span>`;
     btn.addEventListener("click", () => openOverlay());
     c.appendChild(btn); return true;
   }
@@ -929,9 +876,9 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const obs = new MutationObserver(() => tryMountAnchorButton());
       obs.observe(document.body, { childList: true, subtree: true });
     }
-    if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {
-      const chatId = location.hash.replace("#kingy-", "");
-      if (chatId && chatId !== "kingy") { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
+    if (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/")) {
+      const parts = location.pathname.split("/"); const chatId = parts[2];
+      if (chatId) { const st = loadStore(); if (st.chats[chatId]) { st.activeId = chatId; saveStore(st); } }
       setTimeout(() => openOverlay(false), 50);
     }
   }
