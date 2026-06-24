@@ -896,7 +896,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if (!skipNav && (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/"))) history.pushState({}, "", prevPath || "/");
+    if (!skipNav) { window.location.href = "/"; }
   }
   window.addEventListener("popstate", () => {
     if (location.pathname === ROUTE || location.pathname.startsWith(ROUTE + "/")) {
