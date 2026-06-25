@@ -630,6 +630,15 @@ const i=Math.round(el.scrollTop/el.clientHeight);
 if(i!==ai)setAi(i);
 },[ai]);
 y.useEffect(()=>{if(ts[ai])playT(ts[ai]);},[ai,ts]);
+y.useEffect(()=>{
+const iv=setInterval(()=>{
+const au=window._mp3Au||window._mp3kingPlayer?.getAudio();
+if(!au||!au.duration)return;
+const pct=Math.min(au.currentTime/au.duration*100,100)+"%";
+document.querySelectorAll("[data-pbid]").forEach(el=>{el.style.width=pct;});
+},250);
+return()=>clearInterval(iv);
+},[]);
 const handleLike=y.useCallback(t=>{
 const isNowLiked=!likes.has(t.id);
 setLikes(prev=>{
