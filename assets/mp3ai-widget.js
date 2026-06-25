@@ -433,39 +433,22 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         const spMatch = a.url?.match(/playlist\/([A-Za-z0-9]+)/);
         if (!spMatch) throw new Error("Invalid Spotify playlist URL.");
         const spId = spMatch[1];
-        const spRes = await fetch("https://corsproxy.io/?url=" + encodeURIComponent("https://open.spotify.com/playlist/" + spId), {
-          signal: AbortSignal.timeout(14000),
+        const spRes = await fetch("/api/spotify-playlist?id=" + spId, {
+          signal: AbortSignal.timeout(15000),
         });
-        if (!spRes.ok) throw new Error("Could not fetch Spotify page (" + spRes.status + ").");
-        const spHtml = await spRes.text();
-        const spScript = spHtml.match(/<script id="__NEXT_DATA__" type="application\/json">([^<]+)<\/script>/);
-        if (!spScript) throw new Error("Could not parse Spotify data — playlist may be private.");
-        const spData = JSON.parse(spScript[1]);
-        const spPl = spData?.props?.pageProps?.state?.data?.playlist;
-        if (!spPl) throw new Error("Playlist not found or is private.");
-        const spTracks = (spPl?.content?.items || []).map(item => {
-          const t = item?.itemV2?.data;
-          if (!t?.name) return null;
-          return {
-            id: "spotify-" + (t?.uri?.split(":")?.[2] || Math.random().toString(36).slice(2)),
-            title: t.name,
-            artist: t?.artists?.items?.[0]?.profile?.name || "Unknown",
-            album: t?.albumOfTrack?.name || "",
-            duration: t?.duration?.totalMilliseconds ? (() => { const s = Math.floor(t.duration.totalMilliseconds/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; })() : "0:00",
-            coverUrl: t?.albumOfTrack?.coverArt?.sources?.[0]?.url || "/placeholder.svg",
-          };
-        }).filter(Boolean);
-        if (!spTracks.length) throw new Error("No tracks found — playlist may be empty or private.");
+        const spJson = await spRes.json();
+        if (!spRes.ok || spJson.error) throw new Error(spJson.error || "Spotify fetch failed.");
+        if (!spJson.tracks?.length) throw new Error("No tracks found — playlist may be empty or private.");
         const spNewPl = {
           id: `local_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-          name: spPl.name || "Spotify Playlist",
-          description: spPl.description || "",
-          coverUrl: spPl?.images?.items?.[0]?.sources?.[0]?.url || "",
-          tracks: spTracks,
+          name: spJson.name || "Spotify Playlist",
+          description: spJson.description || "",
+          coverUrl: spJson.coverUrl || "",
+          tracks: spJson.tracks,
           createdAt: Date.now(),
         };
         savePlaylists([spNewPl, ...getPlaylists()]);
-        return `🟢 Imported "${spNewPl.name}" — ${spTracks.length} tracks added. Refresh to see it!`;
+        return `🟢 Imported "${spNewPl.name}" — ${spJson.tracks.length} tracks added. Refresh to see it!`;
       }
 
       /* — PLAYLISTS — */
@@ -653,7 +636,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const s = loadStore(), id = uid();
       s.chats[id] = { id, title: "New chat", messages: [], updatedAt: Date.now() };
       s.activeId = id; saveStore(s);
-      history.replaceState({ mp3ai: true }, "", "/" + ROUTE);
+      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE);
       renderSidebar(); renderBody(); closeSidebar();
     });
     sendBtn.addEventListener("click", handleSend);
@@ -676,7 +659,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         if (e.target.closest(".mp3ai-chat-del")) return;
         const s2 = loadStore(); s2.activeId = c.id; saveStore(s2);
         const hasMsg = c.messages && c.messages.some(m => m.role === "user");
-        history.replaceState({ mp3ai: true }, "", "/" + (hasMsg ? ROUTE_CHAT(c.id) : ROUTE));
+        history.replaceState({ mp3ai: true }, "", location.pathname + (hasMsg ? ROUTE_CHAT(c.id) : ROUTE));
         renderSidebar(); renderBody(); closeSidebar();
       });
       item.querySelector(".mp3ai-chat-del").addEventListener("click", e => {
@@ -865,7 +848,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     chat.messages.push({ id: uid(), role: "user", content: text });
     if (chat.messages.filter(m => m.role === "user").length === 1) {
       chat.title = titleFromText(text);
-      history.replaceState({ mp3ai: true }, "", "/" + ROUTE_CHAT(s.activeId));
+      history.replaceState({ mp3ai: true }, "", location.pathname + ROUTE_CHAT(s.activeId));
     }
     chat.updatedAt = Date.now(); saveStore(s); renderSidebar();
     await runAssistantTurn(text);
@@ -890,13 +873,13 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const st = loadStore(), chat = getActiveChat(st);
       const hasMessages = chat.messages.some(m => m.role === "user");
       const targetHash = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
-      const absUrl = "/" + targetHash; if (location.pathname + location.hash !== absUrl) history.replaceState({ mp3ai: true }, "", absUrl);
+      if (location.hash !== targetHash) history.pushState({ mp3ai: true }, "", targetHash);
     }
     setTimeout(() => inputEl?.focus(), 200);
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if (!skipNav) { history.replaceState({}, "", "/"); }
+    if (!skipNav) { history.pushState({}, "", location.pathname); window.location.href = "/"; }
   }
   window.addEventListener("hashchange", () => {
     if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {
