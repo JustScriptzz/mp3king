@@ -890,13 +890,13 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       const st = loadStore(), chat = getActiveChat(st);
       const hasMessages = chat.messages.some(m => m.role === "user");
       const targetHash = hasMessages ? ROUTE_CHAT(st.activeId) : ROUTE;
-      const absUrl = "/" + targetHash; if (location.pathname + location.hash !== absUrl) history.pushState({ mp3ai: true }, "", absUrl);
+      const absUrl = "/" + targetHash; if (location.pathname + location.hash !== absUrl) history.replaceState({ mp3ai: true }, "", absUrl);
     }
     setTimeout(() => inputEl?.focus(), 200);
   }
   function closeOverlay(skipNav) {
     overlay?.classList.remove("mp3ai-open"); closeSidebar();
-    if (!skipNav) { history.pushState({}, "", "/"); }
+    if (!skipNav) { history.replaceState({}, "", "/"); }
   }
   window.addEventListener("hashchange", () => {
     if (location.hash === ROUTE || location.hash.startsWith("#kingy-")) {

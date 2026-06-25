@@ -671,7 +671,7 @@ u.jsxs("div",{className:"flex gap-0.5 bg-secondary rounded-full p-1",children:[
 u.jsx("button",{onClick:()=>setMode("song"),className:"px-3 py-1 rounded-full text-xs font-semibold transition-all "+(mode==="song"?"bg-primary text-primary-foreground":"text-muted-foreground"),children:"Song"})
 ]})
 ]}),
-u.jsx("div",{ref:sRef,onScroll:load?null:onScroll,style:{position:"absolute",top:"3.25rem",bottom:0,left:0,right:0,overflowY:load?"hidden":"scroll",scrollSnapType:"y mandatory",scrollbarWidth:"none",overscrollBehavior:"none",pointerEvents:load?"none":"auto"},children:
+u.jsx("div",{ref:sRef,onScroll:loading?null:onScroll,style:{position:"absolute",top:"3.25rem",bottom:0,left:0,right:0,overflowY:loading?"hidden":"scroll",scrollSnapType:"y mandatory",scrollbarWidth:"none",overscrollBehavior:"none",pointerEvents:loading?"none":"auto"},children:
 [...ts.map((t,idx)=>{
 const isA=idx===ai;
 const liked=likes.has(t.id);
