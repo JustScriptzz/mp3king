@@ -665,7 +665,7 @@ u.jsxs(u.Fragment,{children:[
 u.jsxs("div",{style:{position:"absolute",top:0,left:0,right:0,height:"3.25rem",zIndex:20,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1rem",background:"var(--background,#000)"},children:[
 u.jsxs("div",{style:{display:"flex",alignItems:"center",gap:"0.5rem"},children:[
 u.jsx(hA,{className:"h-5 w-5 text-primary"}),
-u.jsx("h1",{className:"text-xl font-bold text-foreground",children:"Shorties"})
+u.jsx("h1",{className:"text-xl font-bold text-foreground",children:"Discover"})
 ]}),
 u.jsxs("div",{className:"flex gap-0.5 bg-secondary rounded-full p-1",children:[
 u.jsx("button",{onClick:()=>setMode("song"),className:"px-3 py-1 rounded-full text-xs font-semibold transition-all "+(mode==="song"?"bg-primary text-primary-foreground":"text-muted-foreground"),children:"Song"})
@@ -689,7 +689,7 @@ u.jsxs("div",{style:{textAlign:"center",width:"100%"},children:[
 u.jsx("p",{className:"text-lg font-bold text-foreground truncate",children:t.title}),
 u.jsx("p",{className:"text-sm text-muted-foreground mt-0.5",children:t.artist}),
 u.jsxs("button",{onClick:()=>{sCurrent&&sCurrent.id===t.id?sTogglePlay():playT(t);},style:{marginTop:"0.75rem",display:"inline-flex",alignItems:"center",gap:"0.5rem",padding:"0.5rem 1.25rem",background:"var(--primary)",color:"var(--primary-foreground)",borderRadius:"9999px",fontSize:"0.875rem",fontWeight:600,border:"none",cursor:"pointer"},children:[sCurrent&&sCurrent.id===t.id&&actuallyPlaying?u.jsx(um,{className:"h-3.5 w-3.5"}):u.jsx(Pn,{className:"h-3.5 w-3.5",fill:"currentColor"}),sCurrent&&sCurrent.id===t.id&&actuallyPlaying?"Pause":"Play"]}),
-u.jsx("div",{style:{marginTop:"0.75rem",height:"4px",background:"rgba(255,255,255,0.15)",borderRadius:"999px",overflow:"hidden",width:"100%"},children:u.jsx(nu,{value:[sDuration>0?sProgress/sDuration*100:0],max:100,step:.1,onValueChange:([k])=>sSeekTo(k/100*sDuration),className:"flex-1 cursor-pointer w-full"})})
+u.jsxs("div",{style:{marginTop:"0.75rem",width:"100%",display:"flex",alignItems:"center",gap:"8px"},children:[u.jsx("span",{style:{color:"rgba(255,255,255,.5)",fontSize:"11px",minWidth:"32px",textAlign:"right"},children:n0(sProgress)}),u.jsx(nu,{value:[sDuration>0?sProgress/sDuration*100:0],max:100,step:.1,onValueChange:([k])=>sSeekTo(k/100*sDuration),className:"flex-1 cursor-pointer"}),u.jsx("span",{style:{color:"rgba(255,255,255,.5)",fontSize:"11px",minWidth:"32px"},children:n0(sDuration)})]})
 ]})
 ]})
 :u.jsxs("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.75rem",width:"100%",maxWidth:"22rem"},children:[
