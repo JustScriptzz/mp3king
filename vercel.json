@@ -1,6 +1,12 @@
 {
   "rewrites": [
-    { "source": "/error", "destination": "/error.html" },
-    { "source": "/((?!assets|error|favicon|logo|manifest|robots|placeholder|~flock).*)", "destination": "/" }
+    {
+      "source": "/error",
+      "destination": "/error.html"
+    },
+    {
+      "source": "/((?!api/|assets|error|favicon|logo|manifest|robots|placeholder|~flock).*)",
+      "destination": "/"
+    }
   ]
 }
