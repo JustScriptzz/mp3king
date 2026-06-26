@@ -658,7 +658,7 @@ w.artists=w.artists||{};
 w.artists[t.artist]=Math.max(0,(w.artists[t.artist]||0)-1);
 saveWeights(w);
 },[]);
-if(loading)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsxs("div",{style:{textAlign:"center"},children:[u.jsx(hA,{className:"h-8 w-8 text-primary mx-auto animate-pulse"}),u.jsx("p",{className:"text-sm text-muted-foreground mt-2",children:"Loading Shorties..."})]})});
+if(loading)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsxs("div",{style:{textAlign:"center"},children:[u.jsx(hA,{className:"h-8 w-8 text-primary mx-auto animate-pulse"}),u.jsx("p",{className:"text-sm text-muted-foreground mt-2",children:"Loading Discover..."})]})});
 if(!ts.length)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsx("p",{className:"text-sm text-muted-foreground",children:"Nothing to show right now."})});
 return u.jsx("div",{style:{position:"relative",height:"100%",overflow:"hidden"},children:
 u.jsxs(u.Fragment,{children:[
