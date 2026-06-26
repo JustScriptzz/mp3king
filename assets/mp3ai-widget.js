@@ -433,22 +433,48 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         const spMatch = a.url?.match(/playlist\/([A-Za-z0-9]+)/);
         if (!spMatch) throw new Error("Invalid Spotify playlist URL.");
         const spId = spMatch[1];
-        const spRes = await fetch("/api/spotify-playlist?id=" + spId, {
-          signal: AbortSignal.timeout(15000),
+
+        // Get client credentials from localStorage
+        const spClientId = localStorage.getItem("mp3king_sp_client_id");
+        const spClientSecret = localStorage.getItem("mp3king_sp_client_secret");
+        if (!spClientId || !spClientSecret) throw new Error("Spotify not connected. Go to Library → Import → paste a Spotify link and follow the setup prompt to connect your free Spotify Developer credentials.");
+
+        // Get token via Client Credentials flow (client-side, no proxy needed)
+        const spTokRes = await fetch("https://accounts.spotify.com/api/token", {
+          method: "POST",
+          headers: { "Authorization": "Basic " + btoa(spClientId + ":" + spClientSecret), "Content-Type": "application/x-www-form-urlencoded" },
+          body: "grant_type=client_credentials",
+          signal: AbortSignal.timeout(8000),
         });
-        const spJson = await spRes.json();
-        if (!spRes.ok || spJson.error) throw new Error(spJson.error || "Spotify fetch failed.");
-        if (!spJson.tracks?.length) throw new Error("No tracks found — playlist may be empty or private.");
-        const spNewPl = {
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-          name: spJson.name || "Spotify Playlist",
-          description: spJson.description || "",
-          coverUrl: spJson.coverUrl || "",
-          tracks: spJson.tracks,
-          createdAt: Date.now(),
-        };
+        if (!spTokRes.ok) throw new Error("Invalid Spotify credentials. Check your Client ID and Secret.");
+        const { access_token: spTok } = await spTokRes.json();
+
+        // Fetch playlist
+        const fields = "name,description,images,tracks.total,tracks.items(track(id,name,duration_ms,artists(name),album(name,images)))";
+        const spPlRes = await fetch(`https://api.spotify.com/v1/playlists/${spId}?fields=${encodeURIComponent(fields)}`, {
+          headers: { Authorization: `Bearer ${spTok}` }, signal: AbortSignal.timeout(10000),
+        });
+        if (!spPlRes.ok) throw new Error("Playlist not found or private.");
+        const spPl = await spPlRes.json();
+
+        let spItems = spPl.tracks.items || [];
+        let spOff = 100;
+        while (spOff < (spPl.tracks.total || 0) && spOff < 500) {
+          const pg = await fetch(`https://api.spotify.com/v1/playlists/${spId}/tracks?offset=${spOff}&limit=100`, { headers: { Authorization: `Bearer ${spTok}` } });
+          if (!pg.ok) break;
+          const p = await pg.json(); spItems = spItems.concat(p.items || []); spOff += 100;
+        }
+
+        const spTracks = spItems.map(item => {
+          const t = item?.track; if (!t?.name) return null;
+          const ds = Math.floor((t.duration_ms || 0) / 1000);
+          return { id: "spotify-" + (t.id || uid()), title: t.name, artist: t.artists?.[0]?.name || "Unknown", album: t.album?.name || "", duration: `${Math.floor(ds/60)}:${String(ds%60).padStart(2,"0")}`, coverUrl: t.album?.images?.[0]?.url || "/placeholder.svg" };
+        }).filter(Boolean);
+
+        if (!spTracks.length) throw new Error("No tracks found — playlist may be empty or private.");
+        const spNewPl = { id: `local_${Date.now()}_${Math.random().toString(36).slice(2)}`, name: spPl.name || "Spotify Playlist", description: spPl.description || "", coverUrl: spPl.images?.[0]?.url || "", tracks: spTracks, createdAt: Date.now() };
         savePlaylists([spNewPl, ...getPlaylists()]);
-        return `🟢 Imported "${spNewPl.name}" — ${spJson.tracks.length} tracks added. Refresh to see it!`;
+        return `🟢 Imported "${spNewPl.name}" — ${spTracks.length} tracks. Refresh to see it!`;
       }
 
       /* — PLAYLISTS — */
