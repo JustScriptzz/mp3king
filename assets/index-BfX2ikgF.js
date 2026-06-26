@@ -559,9 +559,9 @@ const[page,setPage]=y.useState(0);
 const[loadingMore,setLoadingMore]=y.useState(false);
 const[likes,setLikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_likes")||"[]"))}catch{return new Set()}});
 const[dislikes,setDislikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_dislikes")||"[]"))}catch{return new Set()}});
-const{playTrack:playT,toggleLike,isLiked,isPlaying:sIsPlaying,progress:sProgress,duration:sDuration,togglePlay:sTogglePlay,currentTrack:sCurrent,seekTo:sSeekTo}=un();
+const{playTrack:playT,toggleLike,isLiked,isPlaying:sIsPlaying,progress:sProgress,duration:sDuration,togglePlay:sTogglePlay,currentTrack:sCurrent,seekTo:sSeekTo,audioLoading:sAudioLoading}=un();
 const getWeights=()=>{try{return JSON.parse(localStorage.getItem("mp3king_shorties_weights")||"{}")}catch{return{}}};const[actuallyPlaying,setActuallyPlaying]=y.useState(false);y.useEffect(()=>{const iv=setInterval(()=>{setActuallyPlaying(window._mp3Au?!window._mp3Au.paused:false);},200);return()=>clearInterval(iv);},[]);
-const saveWeights=w=>{localStorage.setItem("mp3king_shorties_weights",JSON.stringify(w))};
+const saveWeights=w=>{localStorage.setItem("mp3king_shorties_weights",JSON.stringify(w))};y.useEffect(()=>{const au=window._mp3Au;if(!au)return;const onEnd=()=>{setAi(prev=>{const next=(prev+1)%ts.length;if(sRef.current)sRef.current.scrollTo({top:next*sRef.current.clientHeight,behavior:"smooth"});return next;});};au.addEventListener("ended",onEnd);return()=>au.removeEventListener("ended",onEnd);},[ts,window._mp3Au]);
 const getAlgoQuery=()=>{
 const w=getWeights();
 const artists=Object.entries(w.artists||{}).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]);
@@ -688,7 +688,7 @@ u.jsx("img",{src:t.coverUrl,alt:t.title,style:{width:"100%",height:"100%",object
 u.jsxs("div",{style:{textAlign:"center",width:"100%"},children:[
 u.jsx("p",{className:"text-lg font-bold text-foreground truncate",children:t.title}),
 u.jsx("p",{className:"text-sm text-muted-foreground mt-0.5",children:t.artist}),
-u.jsxs("button",{onClick:()=>{sCurrent&&sCurrent.id===t.id?sTogglePlay():playT(t);},style:{marginTop:"0.75rem",display:"inline-flex",alignItems:"center",gap:"0.5rem",padding:"0.5rem 1.25rem",background:"var(--primary)",color:"var(--primary-foreground)",borderRadius:"9999px",fontSize:"0.875rem",fontWeight:600,border:"none",cursor:"pointer"},children:[sCurrent&&sCurrent.id===t.id&&actuallyPlaying?u.jsx(um,{className:"h-3.5 w-3.5"}):u.jsx(Pn,{className:"h-3.5 w-3.5",fill:"currentColor"}),sCurrent&&sCurrent.id===t.id&&actuallyPlaying?"Pause":"Play"]}),
+u.jsxs("button",{onClick:()=>{sCurrent&&sCurrent.id===t.id?sTogglePlay():playT(t);},style:{marginTop:"0.75rem",display:"inline-flex",alignItems:"center",gap:"0.5rem",padding:"0.5rem 1.25rem",background:"var(--primary)",color:"var(--primary-foreground)",borderRadius:"9999px",fontSize:"0.875rem",fontWeight:600,border:"none",cursor:"pointer"},children:[sCurrent&&sCurrent.id===t.id&&actuallyPlaying?u.jsx(um,{className:"h-3.5 w-3.5"}):u.jsx(Pn,{className:"h-3.5 w-3.5",fill:"currentColor"}),sCurrent&&sCurrent.id===t.id&&sAudioLoading?"Loading...":sCurrent&&sCurrent.id===t.id&&actuallyPlaying?"Pause":"Play"]}),
 u.jsxs("div",{style:{marginTop:"0.75rem",width:"100%",display:"flex",alignItems:"center",gap:"8px"},children:[u.jsx("span",{style:{color:"rgba(255,255,255,.5)",fontSize:"11px",minWidth:"32px",textAlign:"right"},children:n0(sProgress)}),u.jsx(nu,{value:[sDuration>0?sProgress/sDuration*100:0],max:100,step:.1,onValueChange:([k])=>sSeekTo(k/100*sDuration),className:"flex-1 cursor-pointer"}),u.jsx("span",{style:{color:"rgba(255,255,255,.5)",fontSize:"11px",minWidth:"32px"},children:n0(sDuration)})]})
 ]})
 ]})
