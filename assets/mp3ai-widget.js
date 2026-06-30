@@ -9,7 +9,7 @@
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://text.pollinations.ai";
-  const LLM_MODEL  = "openai";
+  const LLM_MODEL  = "mistral";
   const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
   const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
@@ -929,7 +929,12 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     if (!c) return false;
     const btn = document.createElement("button"); btn.id = "mp3ai-anchor-btn"; btn.type = "button";
     btn.innerHTML = `${svgSpark}<span>Talk to ${AI_NAME}</span>`;
-    btn.addEventListener("click", () => openOverlay());
+    btn.addEventListener("click", () => {
+      const s = loadStore(), id = uid();
+      s.chats[id] = { id, title: "New chat", messages: [], updatedAt: Date.now() };
+      s.activeId = id; saveStore(s);
+      openOverlay();
+    });
     c.appendChild(btn); return true;
   }
 
