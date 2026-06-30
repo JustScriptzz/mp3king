@@ -71,6 +71,10 @@ h1{font-family:Orbitron,sans-serif;font-size:clamp(1rem,3vw,1.5rem);margin:16px 
 <button class="btn primary" onclick="location.href='/'">Return Home</button>
 <button class="btn secondary" onclick="location.reload()">Try Again</button>
 </div>
+<div style="margin-top:12px;">
+<button onclick="(function(){var e=null;try{e=JSON.parse(localStorage.getItem('mp3king_last_error'))}catch(x){}var txt=e?JSON.stringify(e,null,2):'No error saved in localStorage';document.getElementById('mp3dbg').textContent=txt;document.getElementById('mp3dbg').style.display='block';})()" style="background:#1a1a2e;color:#facc15;border:1px solid #facc1555;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:12px;cursor:pointer;">Show Debug Info</button>
+<pre id="mp3dbg" style="display:none;margin-top:10px;background:#08080f;color:#22c55e;border:1px solid #22c55e33;border-radius:8px;padding:12px;font-size:11px;max-height:200px;overflow:auto;word-break:break-all;white-space:pre-wrap;"></pre>
+</div>
 <div class="footer" id="time"></div>
 </div>
 </div>
