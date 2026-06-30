@@ -444,7 +444,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
           method: "POST",
           headers: { "Authorization": "Basic " + btoa(spClientId + ":" + spClientSecret), "Content-Type": "application/x-www-form-urlencoded" },
           body: "grant_type=client_credentials",
-          signal: AbortSignal.timeout(8000),
+          signal: (typeof AbortSignal.timeout==="function"?AbortSignal.timeout(8000):undefined),
         });
         if (!spTokRes.ok) throw new Error("Invalid Spotify credentials. Check your Client ID and Secret.");
         const { access_token: spTok } = await spTokRes.json();
@@ -452,7 +452,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
         // Fetch playlist
         const fields = "name,description,images,tracks.total,tracks.items(track(id,name,duration_ms,artists(name),album(name,images)))";
         const spPlRes = await fetch(`https://api.spotify.com/v1/playlists/${spId}?fields=${encodeURIComponent(fields)}`, {
-          headers: { Authorization: `Bearer ${spTok}` }, signal: AbortSignal.timeout(10000),
+          headers: { Authorization: `Bearer ${spTok}` }, signal: (typeof AbortSignal.timeout==="function"?AbortSignal.timeout(10000):undefined),
         });
         if (!spPlRes.ok) throw new Error("Playlist not found or private.");
         const spPl = await spPlRes.json();
