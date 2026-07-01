@@ -627,8 +627,7 @@ if(ai>=ts.length-4&&!loadingMore)fetchMore();
 const onScroll=y.useCallback(e=>{
 const el=e.currentTarget;
 const i=Math.round(el.scrollTop/el.clientHeight);
-if(i!==ai)setAi(i);
-},[ai]);
+if(i!==ai){if(window._mp3Au&&!window._mp3Au.paused){try{window._mp3Au.pause();}catch(e){}}setAi(i);}},[ai]);
 y.useEffect(()=>{if(ts[ai])playT(ts[ai]);},[ai,ts]);
 const handleLike=y.useCallback(t=>{
 const isNowLiked=!likes.has(t.id);
@@ -638,8 +637,7 @@ isNowLiked?next.add(t.id):next.delete(t.id);
 localStorage.setItem("mp3king_shorties_likes",JSON.stringify([...next]));
 return next;
 });
-if(isNowLiked){
-toggleLike&&toggleLike(t);
+if(isNowLiked){setHeartAnim(t.id);setTimeout(()=>setHeartAnim(null),900);toggleLike&&toggleLike(t);
 const w=getWeights();
 w.artists=w.artists||{};w.genres=w.genres||{};
 w.artists[t.artist]=(w.artists[t.artist]||0)+3;
@@ -658,14 +656,14 @@ w.artists=w.artists||{};
 w.artists[t.artist]=Math.max(0,(w.artists[t.artist]||0)-1);
 saveWeights(w);
 },[]);
-if(loading)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsxs("div",{style:{textAlign:"center"},children:[u.jsx(hA,{className:"h-8 w-8 text-primary mx-auto animate-pulse"}),u.jsx("p",{className:"text-sm text-muted-foreground mt-2",children:"Loading Shorties..."})]})});
+const[heartAnim,setHeartAnim]=y.useState(null);if(loading)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsxs("div",{style:{textAlign:"center"},children:[u.jsx(hA,{className:"h-8 w-8 text-primary mx-auto animate-pulse"}),u.jsx("p",{className:"text-sm text-muted-foreground mt-2",children:"Loading Shorties..."})]})});
 if(!ts.length)return u.jsx("div",{style:{height:"60vh",display:"flex",alignItems:"center",justifyContent:"center"},children:u.jsx("p",{className:"text-sm text-muted-foreground",children:"Nothing to show right now."})});
 return u.jsx("div",{style:{position:"relative",height:"100%",overflow:"hidden"},children:
 u.jsxs(u.Fragment,{children:[
 u.jsxs("div",{style:{position:"absolute",top:0,left:0,right:0,height:"3.25rem",zIndex:20,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1rem",background:"var(--background,#000)"},children:[
 u.jsxs("div",{style:{display:"flex",alignItems:"center",gap:"0.5rem"},children:[
 u.jsx(hA,{className:"h-5 w-5 text-primary"}),
-u.jsx("h1",{className:"text-xl font-bold text-foreground",children:"Shorties"})
+u.jsxs(u.Fragment,{children:[u.jsx("style",{children:"@keyframes _hrtPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.4)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}}"}),u.jsx("h1",{className:"text-xl font-bold text-foreground",children:"Shorties"})]})
 ]}),
 u.jsxs("div",{className:"flex gap-0.5 bg-secondary rounded-full p-1",children:[
 u.jsx("button",{onClick:()=>setMode("song"),className:"px-3 py-1 rounded-full text-xs font-semibold transition-all "+(mode==="song"?"bg-primary text-primary-foreground":"text-muted-foreground"),children:"Song"})
@@ -707,13 +705,14 @@ u.jsx("p",{className:"text-xs text-muted-foreground",children:t.artist})
 ]})
 ]}),
 u.jsxs("div",{style:{position:"absolute",right:"0.75rem",top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:"1rem",alignItems:"center",zIndex:10},children:[
-u.jsxs("button",{onClick:()=>handleLike(t),style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.2rem",background:"none",border:"none",cursor:"pointer"},children:[
+u.jsxs(u.Fragment,{children:[heartAnim===t.id&&u.jsx("div",{style:{position:"absolute",top:"40%",left:"50%",transform:"translate(-50%,-50%)",fontSize:"5rem",pointerEvents:"none",zIndex:99,animation:"_hrtPop 0.9s ease forwards"},children:"❤️"}),u.jsxs("button",{onClick:()=>handleLike(t),style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.2rem",background:"none",border:"none",cursor:"pointer"},children:[
 u.jsx(Bi,{className:"h-7 w-7 transition-all "+(liked?"fill-rose-500 text-rose-500":"text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"),fill:liked?"currentColor":"none"}),
 u.jsx("span",{style:{fontSize:"0.75rem",color:liked?"#f43f5e":"rgba(255,255,255,0.8)",textShadow:"0 1px 2px rgba(0,0,0,0.8)"},children:"Like"})
 ]}),
+u.jsxs("button",{onClick:()=>{if(navigator.share){navigator.share({title:t.title,text:t.title+" by "+t.artist,url:"https://mp3king.vercel.app"}).catch(()=>{});}else{navigator.clipboard&&navigator.clipboard.writeText(t.title+" - "+t.artist);}},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.2rem",background:"none",border:"none",cursor:"pointer"},children:[u.jsx(aA,{className:"h-7 w-7 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"}),u.jsx("span",{style:{fontSize:"0.75rem",color:"rgba(255,255,255,0.8)",textShadow:"0 1px 2px rgba(0,0,0,0.8)"},children:"Share"})]}),]}),
 u.jsxs("button",{onClick:()=>handleDislike(t),style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"0.2rem",background:"none",border:"none",cursor:"pointer"},children:[
 u.jsx(Zn,{className:"h-7 w-7 transition-all "+(disliked?"text-sky-400":"text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]")}),
-u.jsx("span",{style:{fontSize:"0.75rem",color:disliked?"#38bdf8":"rgba(255,255,255,0.8)",textShadow:"0 1px 2px rgba(0,0,0,0.8)"},children:"Skip"})
+u.jsx("span",{style:{fontSize:"0.75rem",color:disliked?"#38bdf8":"rgba(255,255,255,0.8)",textShadow:"0 1px 2px rgba(0,0,0,0.8)"},children:"Not for me"})
 ]})
 ]}),
 isA&&mode==="song"&&u.jsxs("button",{onClick:()=>playT(t),style:{display:"none"},children:[]})
