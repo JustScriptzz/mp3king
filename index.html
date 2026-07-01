@@ -107,15 +107,22 @@
                   coverUrl: (r.artworkUrl100||'/placeholder.svg').replace('100x100','512x512')
                 };
                 p.playTrack(track);
+              setTimeout(function() {
+                window.history.pushState({}, '', '/now-playing');
+                window.dispatchEvent(new Event('popstate'));
+              }, 400);
               })
               .catch(function(){
-                // fallback: play with minimal info, let the player find the stream
                 p.playTrack({
                   id: songId || ('share-'+Date.now()),
                   title: songTitle || '',
                   artist: songArtist || '',
                   album: '', duration: '0:00', coverUrl: '/placeholder.svg'
                 });
+                setTimeout(function() {
+                  window.history.pushState({}, '', '/now-playing');
+                  window.dispatchEvent(new Event('popstate'));
+                }, 400);
               });
           } else {
             setTimeout(function() { tryPlay(attempts - 1); }, 500);
