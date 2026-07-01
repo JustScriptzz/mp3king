@@ -45,16 +45,25 @@
       // Redirect to /error on any JS error
       window.addEventListener('error', function(e) {
         if (window.location.pathname === '/error') return;
+        // cross-origin errors (Script error. with no filename) are harmless — ignore
+        if (!e.filename || !e.message || e.message === 'Script error.' || e.message === 'Script error') return;
         clearTimeout(_loadTimeout);
-        goError(e.message || 'Runtime error', (e.filename ? e.filename + ' line ' + e.lineno : ''));
+        goError(e.message || 'Runtime error', e.filename + ' line ' + e.lineno);
       });
 
       // Catch unhandled promise rejections too
       window.addEventListener('unhandledrejection', function(e) {
         if (window.location.pathname === '/error') return;
-        if (e.reason && (e.reason.name === 'AbortError' || String(e.reason).includes('play() request was interrupted'))) return;
+        var r = e.reason ? String(e.reason) : '';
+        if (!r || r === 'undefined') return;
+        if (e.reason && e.reason.name === 'AbortError') return;
+        if (r.includes('play() request was interrupted')) return;
+        if (r.includes('Load failed')) return;
+        if (r.includes('NetworkError')) return;
+        if (r.includes('Failed to fetch')) return;
+        if (r.includes('Script error')) return;
         clearTimeout(_loadTimeout);
-        goError('Unhandled error', e.reason ? String(e.reason) : 'Promise rejected');
+        goError('Unhandled error', r);
       });
 
       // Clear timeout once React mounts something
