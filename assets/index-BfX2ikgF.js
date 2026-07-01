@@ -559,7 +559,7 @@ const[page,setPage]=y.useState(0);
 const[loadingMore,setLoadingMore]=y.useState(false);
 const[likes,setLikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_likes")||"[]"))}catch{return new Set()}});
 const[dislikes,setDislikes]=y.useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("mp3king_shorties_dislikes")||"[]"))}catch{return new Set()}});
-const{playTrack:playT,toggleLike,isLiked,isPlaying:sIsPlaying,progress:sProgress,duration:sDuration,togglePlay:sTogglePlay,currentTrack:sCurrent,seekTo:sSeekTo}=un();
+const{playTrack:playT,toggleLike,isLiked,isPlaying:sIsPlaying,progress:sProgress,duration:sDuration,togglePlay:sTogglePlay,currentTrack:sCurrent,seekTo:sSeekTo,audioLoading:sAudioLoading}=un();
 const getWeights=()=>{try{return JSON.parse(localStorage.getItem("mp3king_shorties_weights")||"{}")}catch{return{}}};y.useEffect(()=>{return()=>{if(window._mp3Au&&!window._mp3Au.paused){try{window._mp3Au.pause();window._mp3Au.currentTime=0;}catch(e){}}if(window._mp3kingPlayer){try{window._mp3kingPlayer.replaceQueue([]);window._mp3kingPlayer.playTrack(null);}catch(e){}}setTimeout(()=>{if(window.location.pathname==="/now-playing"){window.history.replaceState({},"","/");window.dispatchEvent(new Event("popstate"));}},0);};},[]);const[actuallyPlaying,setActuallyPlaying]=y.useState(false);y.useEffect(()=>{const iv=setInterval(()=>{setActuallyPlaying(window._mp3Au?!window._mp3Au.paused:false);},200);return()=>clearInterval(iv);},[]);
 const saveWeights=w=>{localStorage.setItem("mp3king_shorties_weights",JSON.stringify(w))};
 const getAlgoQuery=()=>{
