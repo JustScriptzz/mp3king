@@ -84,27 +84,45 @@
         var songId = params.get('song');
         if (!songTitle && !songId) return;
 
+        // Remove query params without touching the pathname (avoids React Router nav)
+        history.replaceState({}, '', window.location.pathname);
+
         function tryPlay(attempts) {
           if (attempts <= 0) return;
           var p = window._mp3kingPlayer;
           if (p && p.playTrack) {
-            var track = {
-              id: songId || ('share-' + Date.now()),
-              title: decodeURIComponent(songTitle || ''),
-              artist: decodeURIComponent(songArtist || ''),
-              album: '',
-              duration: '0:00',
-              coverUrl: '/placeholder.svg'
-            };
-            p.playTrack(track);
-            // Clean URL after play
-            history.replaceState({}, '', '/');
+            // Search iTunes for the real track with audio URL, then play
+            var q = encodeURIComponent((songTitle||'') + ' ' + (songArtist||''));
+            fetch('https://itunes.apple.com/search?term=' + q + '&media=music&entity=song&limit=5')
+              .then(function(r){ return r.json(); })
+              .then(function(d){
+                var r = d.results && d.results[0];
+                if (!r) return;
+                var track = {
+                  id: r.trackId ? String(r.trackId) : (songId || ('share-'+Date.now())),
+                  title: r.trackName || songTitle,
+                  artist: r.artistName || songArtist,
+                  album: r.collectionName || '',
+                  duration: '0:00',
+                  coverUrl: (r.artworkUrl100||'/placeholder.svg').replace('100x100','512x512')
+                };
+                p.playTrack(track);
+              })
+              .catch(function(){
+                // fallback: play with minimal info, let the player find the stream
+                p.playTrack({
+                  id: songId || ('share-'+Date.now()),
+                  title: songTitle || '',
+                  artist: songArtist || '',
+                  album: '', duration: '0:00', coverUrl: '/placeholder.svg'
+                });
+              });
           } else {
             setTimeout(function() { tryPlay(attempts - 1); }, 500);
           }
         }
         // Wait for React to mount the player bridge
-        setTimeout(function() { tryPlay(10); }, 1500);
+        setTimeout(function() { tryPlay(12); }, 2000);
       })();
     </script>
 </body>
