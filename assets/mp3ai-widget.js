@@ -10,6 +10,8 @@
   const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://text.pollinations.ai";
   const LLM_MODEL  = "mistral";
+  const IMG_ENDPOINT  = "https://image.pollinations.ai/prompt/";
+  const IMG_TRIGGER_RE = /\b(draw|generate|create|make|show)\b.{0,30}\b(image|picture|photo|art|drawing|cover|artwork)\b/i;
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
   /* ============================================================
