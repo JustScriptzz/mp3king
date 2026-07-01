@@ -1,0 +1,22 @@
+name: Trigger APK build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger mp3king-apk workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'JustScriptzz',
+              repo: 'mp3king-apk',
+              workflow_id: 'build-apk.yml',
+              ref: 'main'
+            })
+            console.log('Triggered mp3king-apk build')
