@@ -10,9 +10,7 @@
   const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://gen.pollinations.ai";
   const LLM_MODEL  = "openai";
-  const IMG_ENDPOINT = "https://image.pollinations.ai/prompt/";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
-  const IMG_TRIGGER_RE = /\b(genera|crea|disegna|fammi|fai|generate|draw|create)\b.{0,25}\b(immagine|foto|disegno|wallpaper|copertina|image|picture|drawing)\b|\bimmagine di\b|\bimage of\b|\bdisegna(mi)?\b/i;
 
   /* ============================================================
      LOCALSTORAGE KEYS (mirrors the app)
