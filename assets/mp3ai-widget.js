@@ -10,8 +10,6 @@
   const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://text.pollinations.ai";
   const LLM_MODEL  = "mistral";
-  const IMG_ENDPOINT  = "https://image.pollinations.ai/prompt/";
-  const IMG_TRIGGER_RE = /\b(draw|generate|create|make|show)\b.{0,30}\b(image|picture|photo|art|drawing|cover|artwork)\b/i;
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
   /* ============================================================
@@ -822,13 +820,6 @@ You can take real actions inside mp3king on behalf of the user. When the user as
     const typingRow = showTypingRow();
     const bubble = typingRow.querySelector(".mp3ai-msg");
 
-    const wantsImg = IMG_TRIGGER_RE.test(latestUserText);
-    let imageUrl = null;
-    if (wantsImg) {
-      imageUrl = IMG_ENDPOINT + encodeURIComponent(latestUserText) + "?model=flux&seed=-1&width=1024&height=1024&nologo=true&rand=" + Math.floor(Math.random() * 1e9);
-      await new Promise(r => { const i = new Image(); i.onload = r; i.onerror = r; i.src = imageUrl; });
-    }
-
     try {
       const messages = [
         { role: "system", content: systemPrompt() },
@@ -855,7 +846,7 @@ You can take real actions inside mp3king on behalf of the user. When the user as
       }
 
       const s2 = loadStore(), c2 = getActiveChat(s2);
-      c2.messages.push({ id: uid(), role: "assistant", content: text || "...", image: imageUrl || undefined, pendingAction: pendingAction || undefined });
+      c2.messages.push({ id: uid(), role: "assistant", content: text || "...", pendingAction: pendingAction || undefined });
       c2.updatedAt = Date.now(); saveStore(s2); renderBody();
     } catch (e) {
       const s2 = loadStore(), c2 = getActiveChat(s2);
