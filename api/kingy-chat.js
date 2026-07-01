@@ -46,6 +46,24 @@ export default async function handler(req) {
     });
 
     if (!gwRes.ok) {
+      // Fallback: Pollinations text API (free, keyless) so the assistant
+      // keeps working while AI_GATEWAY_API_KEY isn't configured yet.
+      try {
+        const sysMsg = messages.find(m => m.role === 'system')?.content || '';
+        const chatMsgs = messages.filter(m => m.role !== 'system');
+        const lastUser = [...chatMsgs].reverse().find(m => m.role === 'user')?.content || '';
+        const history = chatMsgs.slice(-7, -1)
+          .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n');
+        const prompt = history ? `${history}\nUser: ${lastUser}` : lastUser;
+        const url = 'https://text.pollinations.ai/' + encodeURIComponent(prompt)
+          + '?model=mistral&system=' + encodeURIComponent(sysMsg)
+          + '&seed=' + Math.floor(Math.random() * 1e9) + '&private=true';
+        const fbRes = await fetch(url);
+        if (fbRes.ok) {
+          const text = (await fbRes.text()).trim();
+          return json({ text, fallback: true });
+        }
+      } catch {}
       const errText = await gwRes.text().catch(() => '');
       return json({ error: `Gateway error ${gwRes.status}`, detail: errText.slice(0, 500) }, 502);
     }
