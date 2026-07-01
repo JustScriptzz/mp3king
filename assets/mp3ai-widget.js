@@ -8,7 +8,7 @@
   const AI_NAME    = "Kingy";
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
-  const LLM_BASE   = "https://gen.pollinations.ai";
+  const LLM_BASE   = "https://text.pollinations.ai";
   const LLM_MODEL  = "mistral";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
