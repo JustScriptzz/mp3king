@@ -75,6 +75,37 @@
         }
       });
       _observer.observe(document.getElementById('root'), { childList: true });
+
+      // Auto-play song from share link: ?song=ID&title=...&artist=...
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var songTitle = params.get('title');
+        var songArtist = params.get('artist');
+        var songId = params.get('song');
+        if (!songTitle && !songId) return;
+
+        function tryPlay(attempts) {
+          if (attempts <= 0) return;
+          var p = window._mp3kingPlayer;
+          if (p && p.playTrack) {
+            var track = {
+              id: songId || ('share-' + Date.now()),
+              title: decodeURIComponent(songTitle || ''),
+              artist: decodeURIComponent(songArtist || ''),
+              album: '',
+              duration: '0:00',
+              coverUrl: '/placeholder.svg'
+            };
+            p.playTrack(track);
+            // Clean URL after play
+            history.replaceState({}, '', '/');
+          } else {
+            setTimeout(function() { tryPlay(attempts - 1); }, 500);
+          }
+        }
+        // Wait for React to mount the player bridge
+        setTimeout(function() { tryPlay(10); }, 1500);
+      })();
     </script>
 </body>
 </html>
