@@ -8,8 +8,7 @@
   const AI_NAME    = "Kingy";
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
-  const LLM_BASE   = "https://gen.pollinations.ai/v1/chat/completions";
-  const LLM_MODEL  = "openai";
+  const GATEWAY_ENDPOINT = "/api/kingy-chat";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
   /* ============================================================
@@ -29,21 +28,21 @@
   };
 
   /* ============================================================
-     CLOUD INFERENCE (Pollinations, new gen.pollinations.ai endpoint,
-     OpenAI-compatible /v1/chat/completions, anonymous tier — free, no key)
+     CLOUD INFERENCE (DuckDuckGo AI Chat via our own /api proxy —
+     fully anonymous, no signup, no API key)
   ============================================================ */
   async function streamLLM(messages, onToken) {
-    const res = await fetch(LLM_BASE, {
+    const res = await fetch(GATEWAY_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: LLM_MODEL, messages, stream: false }),
+      body: JSON.stringify({ messages }),
     });
     if (!res.ok) {
-      const errBody = await res.text().catch(() => "");
-      throw new Error("LLM error " + res.status + (errBody ? ": " + errBody.slice(0, 200) : ""));
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || ("LLM error " + res.status));
     }
     const data = await res.json();
-    const full = (data?.choices?.[0]?.message?.content || "").trim();
+    const full = (data?.text || "").trim();
     onToken(full);
     return full;
   }
