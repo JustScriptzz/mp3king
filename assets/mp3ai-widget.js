@@ -8,7 +8,7 @@
   const AI_NAME    = "Kingy";
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
-  const LLM_BASE   = "https://text.pollinations.ai";
+  const LLM_BASE   = "https://gen.pollinations.ai/v1/chat/completions";
   const LLM_MODEL  = "mistral";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
@@ -29,33 +29,23 @@
   };
 
   /* ============================================================
-     CLOUD INFERENCE (Pollinations text, anonymous tier — free, no key)
+     CLOUD INFERENCE (Pollinations, new gen.pollinations.ai endpoint,
+     OpenAI-compatible /v1/chat/completions, anonymous tier — free, no key)
   ============================================================ */
   async function streamLLM(messages, onToken) {
-    const sysMsg   = messages.find(m => m.role === "system")?.content || "";
-    const chatMsgs = messages.filter(m => m.role !== "system");
-    const lastUser = [...chatMsgs].reverse().find(m => m.role === "user")?.content || "";
-    const history  = chatMsgs.slice(-7, -1).map(m => `${m.role === "user" ? "User" : "Kingy"}: ${m.content}`).join("\n");
-    const prompt   = history ? `${history}\nUser: ${lastUser}` : lastUser;
-
-    const url = LLM_BASE + "/" + encodeURIComponent(prompt)
-      + "?model=" + LLM_MODEL
-      + "&system=" + encodeURIComponent(sysMsg)
-      + "&seed=" + Math.floor(Math.random() * 1e9)
-      + "&private=true";
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("LLM error " + res.status);
-    const reader  = res.body.getReader();
-    const decoder = new TextDecoder();
-    let full = "";
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      full += decoder.decode(value, { stream: true });
-      onToken(full);
+    const res = await fetch(LLM_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: LLM_MODEL, messages, stream: false }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error("LLM error " + res.status + (errBody ? ": " + errBody.slice(0, 200) : ""));
     }
-    return full.trim();
+    const data = await res.json();
+    const full = (data?.choices?.[0]?.message?.content || "").trim();
+    onToken(full);
+    return full;
   }
 
   /* ============================================================
