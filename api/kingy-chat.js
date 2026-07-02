@@ -27,15 +27,32 @@ export default async function handler(req) {
 
   try {
     // Step 1: get a fresh vqd session token
-    const statusRes = await fetch(STATUS_URL, {
-      headers: {
-        'x-vqd-accept': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      },
-    });
-    const vqd = statusRes.headers.get('x-vqd-4');
+    const browserHeaders = {
+      'x-vqd-accept': '1',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://duckduckgo.com/',
+      'Origin': 'https://duckduckgo.com',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Dest': 'empty',
+    };
+
+    let statusRes = await fetch(STATUS_URL, { headers: browserHeaders });
+    let vqd = statusRes.headers.get('x-vqd-4');
+    let cookies = statusRes.headers.get('set-cookie') || '';
+
+    // Retry once on failure (DuckDuckGo occasionally 418s the first request)
     if (!vqd) {
-      return json({ error: 'Could not obtain session token from DuckDuckGo' }, 502);
+      statusRes = await fetch(STATUS_URL, { headers: { ...browserHeaders, ...(cookies ? { Cookie: cookies } : {}) } });
+      vqd = statusRes.headers.get('x-vqd-4');
+      cookies = statusRes.headers.get('set-cookie') || cookies;
+    }
+
+    if (!vqd) {
+      const bodyText = await statusRes.text().catch(() => '');
+      return json({ error: 'Could not obtain session token from DuckDuckGo', status: statusRes.status, detail: bodyText.slice(0, 200) }, 502);
     }
 
     // DuckDuckGo's chat only accepts role user/assistant, no system —
@@ -53,9 +70,10 @@ export default async function handler(req) {
     const chatRes = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
+        ...browserHeaders,
         'Content-Type': 'application/json',
         'x-vqd-4': vqd,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        ...(cookies ? { Cookie: cookies } : {}),
       },
       body: JSON.stringify({ model: MODEL, messages: chatMsgs }),
     });
