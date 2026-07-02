@@ -9,7 +9,7 @@
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
   const LLM_BASE   = "https://gen.pollinations.ai/v1/chat/completions";
-  const LLM_MODEL  = "mistral";
+  const LLM_MODEL  = "openai";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
   /* ============================================================
