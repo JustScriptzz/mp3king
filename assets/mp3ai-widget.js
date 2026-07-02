@@ -8,8 +8,8 @@
   const AI_NAME    = "Kingy";
   const ROUTE      = "#kingy";
   const ROUTE_CHAT = id => `#kingy-${id}`;
-  const GATEWAY_ENDPOINT = "/api/kingy-chat";
-  const GATEWAY_MODEL    = "openai/gpt-5-nano";
+  const LLM_BASE   = "https://text.pollinations.ai";
+  const LLM_MODEL  = "mistral";
   const ACTION_RE  = /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/;
 
   /* ============================================================
@@ -29,22 +29,33 @@
   };
 
   /* ============================================================
-     CLOUD INFERENCE (Vercel AI Gateway, via our own /api proxy)
+     CLOUD INFERENCE (Pollinations text, anonymous tier — free, no key)
   ============================================================ */
   async function streamLLM(messages, onToken) {
-    const res = await fetch(GATEWAY_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: GATEWAY_MODEL, messages }),
-    });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error || ("LLM error " + res.status));
+    const sysMsg   = messages.find(m => m.role === "system")?.content || "";
+    const chatMsgs = messages.filter(m => m.role !== "system");
+    const lastUser = [...chatMsgs].reverse().find(m => m.role === "user")?.content || "";
+    const history  = chatMsgs.slice(-7, -1).map(m => `${m.role === "user" ? "User" : "Kingy"}: ${m.content}`).join("\n");
+    const prompt   = history ? `${history}\nUser: ${lastUser}` : lastUser;
+
+    const url = LLM_BASE + "/" + encodeURIComponent(prompt)
+      + "?model=" + LLM_MODEL
+      + "&system=" + encodeURIComponent(sysMsg)
+      + "&seed=" + Math.floor(Math.random() * 1e9)
+      + "&private=true";
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("LLM error " + res.status);
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      full += decoder.decode(value, { stream: true });
+      onToken(full);
     }
-    const data = await res.json();
-    const full = (data.text || "").trim();
-    onToken(full); // no real streaming through this proxy, deliver full text at once
-    return full;
+    return full.trim();
   }
 
   /* ============================================================
