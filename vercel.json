@@ -5,7 +5,7 @@
       "destination": "/error.html"
     },
     {
-      "source": "/((?!api/|assets|error|favicon|logo|manifest|robots|placeholder|~flock).*)",
+      "source": "/((?!api/|assets|error|favicon|logo|manifest|robots|placeholder|~flock|\\.well-known).*)",
       "destination": "/"
     }
   ]
